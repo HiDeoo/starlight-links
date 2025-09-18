@@ -1,0 +1,11 @@
+{
+  "extends": "@hideoo/tsconfig",
+  "references": [
+    {
+      "path": "./client"
+    },
+    {
+      "path": "./server"
+    }
+  ]
+}

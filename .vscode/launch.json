@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "extensionHost",
+      "request": "launch",
+      "name": "Launch",
+      "runtimeExecutable": "${execPath}",
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+      "outFiles": ["${workspaceRoot}/client/dist/**/*.js", "${workspaceRoot}/server/dist/**/*.js"],
+      "autoAttachChildProcesses": true,
+      "preLaunchTask": "${defaultBuildTask}"
+    }
+  ]
+}

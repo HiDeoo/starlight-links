@@ -1,0 +1,9 @@
+{
+  "name": "starlight-links-client",
+  "version": "0.0.1",
+  "type": "module",
+  "devDependencies": {
+    "@types/vscode": "^1.102.0"
+  },
+  "private": true
+}
