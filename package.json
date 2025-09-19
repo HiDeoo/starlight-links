@@ -40,6 +40,31 @@
     "url": "https://github.com/HiDeoo/starlight-links.git"
   },
   "bugs": "https://github.com/HiDeoo/starlight-links/issues",
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:plaintext"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Starlight Links",
+      "properties": {
+        "starlight-links.configDirectories": {
+          "default": [
+            ".",
+            "./docs"
+          ],
+          "description": "The directories to look for Starlight configuration files in (relative to the workspace root).",
+          "type": "array"
+        }
+      }
+    }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ],
   "prettier": "@hideoo/prettier-config"
 }
