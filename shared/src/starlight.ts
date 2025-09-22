@@ -35,9 +35,3 @@ async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirecto
 
   return undefined
 }
-
-export interface StarlightUris {
-  config: Uri
-  content: Uri
-  workspace: Uri
-}

@@ -55,6 +55,15 @@ importers:
         specifier: ^1.0.12
         version: 1.0.12
 
+  shared:
+    devDependencies:
+      '@types/vscode':
+        specifier: ^1.102.0
+        version: 1.104.0
+      vscode-languageserver:
+        specifier: ^10.0.0-next.14
+        version: 10.0.0-next.14
+
 packages:
 
   '@astrojs/compiler@2.13.0':

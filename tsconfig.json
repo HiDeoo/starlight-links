@@ -6,6 +6,9 @@
     },
     {
       "path": "./server"
+    },
+    {
+      "path": "./shared"
     }
   ]
 }

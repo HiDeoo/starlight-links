@@ -3,7 +3,9 @@ import path from 'node:path'
 import { type ExtensionContext, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
-import { isStarlightProject } from './libs/starlight.js'
+import { getWorkspaceConfig } from '../../shared/dist/config.js'
+import { isStarlightProject } from '../../shared/dist/starlight.js'
+
 import { isWorkspaceWithSingleFolder } from './libs/vsc.js'
 
 let client: LanguageClient | undefined
@@ -13,12 +15,7 @@ export async function activate(context: ExtensionContext) {
     throw new Error('Starlight Links only supports single folder workspaces.')
   }
 
-  if (
-    !(await isStarlightProject(
-      workspace.workspaceFolders[0],
-      workspace.getConfiguration('starlight-i18n').get<string[]>('configDirectories') ?? ['.'],
-    ))
-  ) {
+  if (!(await isStarlightProject(workspace.workspaceFolders[0], getWorkspaceConfig(workspace).configDirectories))) {
     throw new Error('Failed to find a Starlight instance in the current workspace.')
   }
 

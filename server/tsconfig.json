@@ -8,5 +8,10 @@
     "rootDir": "src",
     "sourceMap": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ]
 }
