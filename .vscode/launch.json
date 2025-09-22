@@ -7,7 +7,7 @@
       "name": "Launch",
       "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
-      "outFiles": ["${workspaceRoot}/client/dist/**/*.js", "${workspaceRoot}/server/dist/**/*.js"],
+      "outFiles": ["${workspaceRoot}/dist/**/*.js"],
       "autoAttachChildProcesses": true,
       "preLaunchTask": "${defaultBuildTask}"
     }

@@ -10,6 +10,11 @@
       },
       "presentation": {
         "reveal": "never"
+      },
+      "options": {
+        "env": {
+          "NODE_ENV": "development"
+        }
       }
     }
   ]

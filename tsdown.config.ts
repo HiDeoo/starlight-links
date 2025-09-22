@@ -6,4 +6,13 @@ export default defineConfig({
     server: 'packages/server/src/server.ts',
   },
   external: ['vscode'],
+  sourcemap: import.meta.env.NODE_ENV === 'development',
 })
+
+declare global {
+  interface ImportMeta {
+    env: {
+      NODE_ENV?: string
+    }
+  }
+}
