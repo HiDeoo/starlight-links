@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "starlight-links-shared": "workspace:*",
     "vscode-languageclient": "^10.0.0-next.17"
   },
   "devDependencies": {

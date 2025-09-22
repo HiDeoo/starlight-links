@@ -1,12 +1,11 @@
 import path from 'node:path'
 
+import { getWorkspaceConfig } from 'starlight-links-shared/config.js'
+import { isStarlightProject } from 'starlight-links-shared/starlight.js'
 import { type ExtensionContext, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
-import { getWorkspaceConfig } from '../../shared/dist/config.js'
-import { isStarlightProject } from '../../shared/dist/starlight.js'
-
-import { isWorkspaceWithSingleFolder } from './libs/vsc.js'
+import { isWorkspaceWithSingleFolder } from './libs/vsc'
 
 let client: LanguageClient | undefined
 
@@ -19,7 +18,7 @@ export async function activate(context: ExtensionContext) {
     throw new Error('Failed to find a Starlight instance in the current workspace.')
   }
 
-  const serverModule = context.asAbsolutePath(path.join('server', 'dist', 'server.js'))
+  const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'))
 
   client = new LanguageClient(
     'starlight-links',

@@ -1,4 +1,2 @@
 packages:
-  - client
-  - server
-  - shared
+  - 'packages/*'

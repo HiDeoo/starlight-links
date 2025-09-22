@@ -5,10 +5,9 @@
   "description": "// TODO(HiDeoo)",
   "author": "HiDeoo <github@hideoo.dev> (https://hideoo.dev)",
   "type": "module",
-  "main": "./client/dist/extension.js",
+  "main": "./dist/extension.js",
   "scripts": {
-    "dev": "tsc -b -w",
-    "build": "tsc -b",
+    "build": "tsdown",
     "vscode:package": "pnpx @vscode/vsce package",
     "vscode:prepublish": "pnpm build",
     "test": "echo \"Error: no test implemented // TODO(HiDeoo) .\" && exit 1",
@@ -24,6 +23,7 @@
     "@hideoo/tsconfig": "^2.0.1",
     "eslint": "^9.35.0",
     "prettier": "^3.6.2",
+    "tsdown": "^0.15.4",
     "typescript": "^5.9.2"
   },
   "engines": {

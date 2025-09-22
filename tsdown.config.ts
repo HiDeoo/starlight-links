@@ -1,0 +1,9 @@
+import { defineConfig } from 'tsdown'
+
+export default defineConfig({
+  entry: {
+    extension: 'packages/client/src/extension.ts',
+    server: 'packages/server/src/server.ts',
+  },
+  external: ['vscode'],
+})

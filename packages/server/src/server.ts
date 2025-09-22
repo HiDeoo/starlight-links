@@ -1,3 +1,4 @@
+import { getConnectionConfig } from 'starlight-links-shared/config.js'
 import {
   createConnection,
   ProposedFeatures,
@@ -7,8 +8,6 @@ import {
   CompletionItemKind,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
-
-import { getConnectionConfig } from '../../shared/dist/config.js'
 
 const connection = createConnection(ProposedFeatures.all)
 
