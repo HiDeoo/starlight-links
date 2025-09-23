@@ -1,5 +1,8 @@
-export function serializeLspOptions(fsPaths: StarlightFsPaths): StarlightLinksLspOptions {
+import type { StarlightConfig, StarlightFsPaths } from './starlight'
+
+export function serializeLspOptions(fsPaths: StarlightFsPaths, config: StarlightConfig): StarlightLinksLspOptions {
   return {
+    config,
     fsPaths,
   }
 }
@@ -9,10 +12,6 @@ export function deserializeLspOptions(options: unknown): StarlightLinksLspOption
 }
 
 export interface StarlightLinksLspOptions {
+  config: StarlightConfig
   fsPaths: StarlightFsPaths
-}
-
-interface StarlightFsPaths {
-  config: string
-  content: string
 }

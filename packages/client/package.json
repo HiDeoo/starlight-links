@@ -3,10 +3,14 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "@babel/parser": "^7.28.4",
+    "@babel/traverse": "^7.28.4",
+    "@babel/types": "^7.28.4",
     "starlight-links-shared": "workspace:*",
     "vscode-languageclient": "^10.0.0-next.17"
   },
   "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
     "@types/node": "^24.5.2",
     "@types/vscode": "^1.102.0"
   },

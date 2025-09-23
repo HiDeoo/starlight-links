@@ -1,7 +1,9 @@
 import path from 'node:path'
 
-import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
+import type { StarlightConfig, StarlightFsPaths } from 'starlight-links-shared/starlight.js'
 import { FileType, Uri, workspace, type WorkspaceFolder } from 'vscode'
+
+import { getStarlightConfigFromCode } from './ast'
 
 // https://github.com/withastro/astro/blob/6b92b3d455cb7b7ac09c5dcc0eceaabec1ba5903/packages/astro/src/core/config/config.ts#L27-L36
 const configFileNames = new Set([
@@ -13,18 +15,18 @@ const configFileNames = new Set([
   'astro.config.cts',
 ])
 
-export async function getStarlightFsPaths(
-  workspaceFolder: WorkspaceFolder,
-  configDirectories: string[],
-): Promise<StarlightLinksLspOptions['fsPaths'] | undefined> {
+export async function getStarlightConfigFsPath(workspaceFolder: WorkspaceFolder, configDirectories: string[]) {
   const astroConfigUri = await getAstroConfigUri(workspaceFolder, configDirectories)
   if (!astroConfigUri) return
 
-  return {
-    config: astroConfigUri.fsPath,
-    // TODO(HiDeoo) custom src
-    content: Uri.joinPath(Uri.file(path.dirname(astroConfigUri.fsPath)), 'src', 'content', 'docs').fsPath,
-  }
+  return astroConfigUri.fsPath
+}
+
+export async function getStarlightConfig(fsPath: string) {
+  const configData = await workspace.fs.readFile(Uri.file(fsPath))
+  const configStr = Buffer.from(configData).toString('utf8')
+
+  return getStarlightConfigFromCode(configStr)
 }
 
 async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirectories: string[]) {
@@ -45,4 +47,12 @@ async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirecto
   }
 
   return
+}
+
+export function getStarlightFsPaths(configFsPath: string, starlightConfig: StarlightConfig): StarlightFsPaths {
+  return {
+    config: configFsPath,
+    content: Uri.joinPath(Uri.file(path.dirname(configFsPath)), starlightConfig.srcDir ?? 'src', 'content', 'docs')
+      .fsPath,
+  }
 }

@@ -5,21 +5,26 @@ import { type ExtensionContext, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
 import { getConfig } from './libs/config'
-import { getStarlightFsPaths } from './libs/starlight'
+import { getStarlightConfig, getStarlightConfigFsPath, getStarlightFsPaths } from './libs/starlight'
 import { isWorkspaceWithSingleFolder } from './libs/vsc'
 
 let client: LanguageClient | undefined
 
 export async function activate(context: ExtensionContext) {
   if (!isWorkspaceWithSingleFolder(workspace.workspaceFolders)) {
-    throw new Error('Starlight Links only supports single folder workspaces.')
+    throw new Error('Starlight Links only supports single folder workspaces')
   }
 
-  const starlightFsPaths = await getStarlightFsPaths(workspace.workspaceFolders[0], getConfig().configDirectories)
+  const starlightConfigFsPath = await getStarlightConfigFsPath(
+    workspace.workspaceFolders[0],
+    getConfig().configDirectories,
+  )
 
-  if (!starlightFsPaths) {
-    throw new Error('Failed to find a Starlight instance in the current workspace.')
+  if (!starlightConfigFsPath) {
+    throw new Error('Failed to find a Starlight instance in the current workspace')
   }
+
+  const starlightConfig = await getStarlightConfig(starlightConfigFsPath)
 
   const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'))
 
@@ -31,12 +36,16 @@ export async function activate(context: ExtensionContext) {
       debug: { module: serverModule, transport: TransportKind.ipc },
     },
     {
+      // TODO(HiDeoo) md
       // TODO(HiDeoo) mdx
       documentSelector: [
         { scheme: 'file', language: 'plaintext' },
         { scheme: 'untitled', language: 'plaintext' },
       ],
-      initializationOptions: serializeLspOptions(starlightFsPaths),
+      initializationOptions: serializeLspOptions(
+        getStarlightFsPaths(starlightConfigFsPath, starlightConfig),
+        starlightConfig,
+      ),
       synchronize: { fileEvents: workspace.createFileSystemWatcher('**/*.md') },
     },
   )
