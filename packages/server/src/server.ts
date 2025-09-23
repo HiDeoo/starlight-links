@@ -1,4 +1,4 @@
-import { getConnectionConfig } from 'starlight-links-shared/config.js'
+import { deserializeLspOptions, type StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
 import {
   createConnection,
   ProposedFeatures,
@@ -6,14 +6,70 @@ import {
   type InitializeResult,
   TextDocuments,
   CompletionItemKind,
+  type InitializeParams,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
-const connection = createConnection(ProposedFeatures.all)
+import { getLinksData, type LinksData } from './libs/starlight'
 
+const connection = createConnection(ProposedFeatures.all)
 const documents = new TextDocuments(TextDocument)
 
-connection.onInitialize(() => {
+let lspOptions: StarlightLinksLspOptions | undefined
+let linksData: LinksData = new Map()
+
+runLsp()
+
+function runLsp() {
+  connection.onInitialize(onConnectionInitialize)
+
+  // TODO(HiDeoo) onConfigChange
+
+  documents.onDidChangeContent(() => {
+    connection.console.log('🚨 [server.ts:53] change.document:')
+  })
+
+  connection.onDidChangeWatchedFiles((_change) => {
+    // Monitored files have change in VSCode
+    connection.console.log('We received a file change event')
+  })
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  connection.languages.diagnostics.on(() => {
+    connection.console.log('🚨 [server.ts:53] diagnostics')
+  })
+
+  connection.onCompletion(() => {
+    if (!lspOptions) return []
+
+    return [...linksData.entries()].map(([k, v]) => ({
+      label: k,
+      kind: CompletionItemKind.Text,
+      detail: 'v',
+    }))
+  })
+
+  connection.onCompletionResolve((item) => {
+    connection.console.log('😡😡😡😡😡')
+    connection.console.log(JSON.stringify(item, null, 2))
+
+    // TODO(HiDeoo) What is the point of this, how to see this extra info?
+    if (item.data === 1) {
+      item.detail = 'TypeScript details'
+      item.documentation = 'TypeScript documentation'
+    } else if (item.data === 2) {
+      item.detail = 'JavaScript details'
+      item.documentation = 'JavaScript documentation'
+    }
+    return item
+  })
+
+  documents.listen(connection)
+  connection.listen()
+}
+
+function onConnectionInitialize({ initializationOptions }: InitializeParams) {
   // const capabilities = params.capabilities
 
   // Does the client support the `workspace/configuration` request?
@@ -28,7 +84,7 @@ connection.onInitialize(() => {
 
   const result: InitializeResult = {
     capabilities: {
-      completionProvider: { triggerCharacters: ['#'] },
+      completionProvider: { resolveProvider: true, triggerCharacters: ['#'] },
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
     },
@@ -42,60 +98,16 @@ connection.onInitialize(() => {
   //   }
   // }
 
-  connection.console.log('🚨 [server.ts:53] InitializeResult')
+  lspOptions = deserializeLspOptions(initializationOptions)
+
+  getLinksData(lspOptions)
+    .then((result) => {
+      linksData = result
+      connection.console.log('🏃‍➡️🏃‍➡️🏃‍➡️ Links data loaded:')
+    })
+    .catch(() => {
+      connection.console.error(`🏃‍➡️🏃‍➡️🏃‍➡️ Failed to load links data`)
+    })
 
   return result
-})
-
-documents.onDidChangeContent(() => {
-  connection.console.log('🚨 [server.ts:53] change.document:')
-})
-
-connection.onDidChangeWatchedFiles((_change) => {
-  // Monitored files have change in VSCode
-  connection.console.log('We received a file change event')
-})
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-connection.languages.diagnostics.on(() => {
-  connection.console.log('🚨 [server.ts:53] diagnostics')
-})
-
-connection.onCompletion(async () => {
-  connection.console.log('🚨 [server.ts:53] cconnection.onCompletion')
-  const config = await getConnectionConfig(connection)
-  connection.console.log(JSON.stringify(config, null, 2))
-
-  // The pass parameter contains the position of the text document in
-  // which code complete got requested. For the example we ignore this
-  // info and always provide the same completion items.
-  return [
-    {
-      label: 'TypeScript',
-      kind: CompletionItemKind.Text,
-      data: 1,
-    },
-    {
-      label: 'JavaScript',
-      kind: CompletionItemKind.Text,
-      data: 2,
-    },
-  ]
-})
-
-connection.onCompletionResolve((item) => {
-  if (item.data === 1) {
-    item.detail = 'TypeScript details'
-    item.documentation = 'TypeScript documentation'
-  } else if (item.data === 2) {
-    item.detail = 'JavaScript details'
-    item.documentation = 'JavaScript documentation'
-  }
-  return item
-})
-
-documents.listen(connection)
-
-// Listen on the connection
-connection.listen()
+}

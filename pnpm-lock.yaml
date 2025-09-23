@@ -54,9 +54,15 @@ importers:
 
   packages/server:
     dependencies:
+      github-slugger:
+        specifier: ^2.0.0
+        version: 2.0.0
       starlight-links-shared:
         specifier: workspace:*
         version: link:../shared
+      tinyglobby:
+        specifier: ^0.2.15
+        version: 0.2.15
       vscode-languageserver:
         specifier: ^10.0.0-next.14
         version: 10.0.0-next.14
@@ -64,14 +70,7 @@ importers:
         specifier: ^1.0.12
         version: 1.0.12
 
-  packages/shared:
-    devDependencies:
-      '@types/vscode':
-        specifier: ^1.102.0
-        version: 1.104.0
-      vscode-languageserver:
-        specifier: ^10.0.0-next.14
-        version: 10.0.0-next.14
+  packages/shared: {}
 
 packages:
 
@@ -1105,6 +1104,9 @@ packages:
 
   get-tsconfig@4.10.1:
     resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
+
+  github-slugger@2.0.0:
+    resolution: {integrity: sha512-IaOQ9puYtjrkq7Y0Ygl9KDZnrf/aiUJYUpVf89y8kyaxbRG7Y1SrX/jaumrv81vc61+kiMempujsM3Yw7w5qcw==}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -3381,6 +3383,8 @@ snapshots:
   get-tsconfig@4.10.1:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  github-slugger@2.0.0: {}
 
   glob-parent@5.1.2:
     dependencies:
