@@ -7,9 +7,11 @@ import {
   TextDocuments,
   CompletionItemKind,
   type InitializeParams,
+  type CompletionParams,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
+import { endsWithLinkUrl } from './libs/markdown'
 import { getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -22,6 +24,7 @@ runLsp()
 
 function runLsp() {
   connection.onInitialize(onConnectionInitialize)
+  connection.onCompletion(onConnectionCompletion)
 
   // TODO(HiDeoo) onConfigChange
 
@@ -38,16 +41,6 @@ function runLsp() {
   // @ts-ignore
   connection.languages.diagnostics.on(() => {
     connection.console.log('🚨 [server.ts:53] diagnostics')
-  })
-
-  connection.onCompletion(() => {
-    if (!lspOptions) return []
-
-    return [...linksData.entries()].map(([k, v]) => ({
-      label: k,
-      kind: CompletionItemKind.Text,
-      detail: 'v',
-    }))
   })
 
   connection.onCompletionResolve((item) => {
@@ -103,11 +96,32 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
   getLinksData(lspOptions)
     .then((result) => {
       linksData = result
+      // TODO(HiDeoo)
       connection.console.log('🏃‍➡️🏃‍➡️🏃‍➡️ Links data loaded:')
     })
     .catch(() => {
+      // TODO(HiDeoo)
       connection.console.error(`🏃‍➡️🏃‍➡️🏃‍➡️ Failed to load links data`)
     })
 
   return result
+}
+
+function onConnectionCompletion({ position, textDocument }: CompletionParams) {
+  if (!lspOptions) return
+
+  const document = documents.get(textDocument.uri)
+  if (!document) return
+
+  const text = document.getText()
+  const offset = document.offsetAt(position)
+  const lineStart = text.lastIndexOf('\n', offset - 1) + 1
+  const currentLine = text.slice(lineStart, offset)
+
+  if (!endsWithLinkUrl(currentLine)) return
+
+  return [...linksData.keys()].map((slug) => ({
+    label: slug,
+    kind: CompletionItemKind.Text,
+  }))
 }
