@@ -4,16 +4,20 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import pLimit from 'p-limit'
 import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
-import { slugifyPath } from 'starlight-links-shared/path.js'
+import { slugifyPath, stripExtension } from 'starlight-links-shared/path.js'
 import { glob } from 'tinyglobby'
 
 const runWithConcurrency = pLimit(10)
 
 // TODO(HiDeoo) file added, removed, or renamed
-// TODO(HiDeoo) remove 404s
 
 export async function getLinksData({ config, fsPaths }: StarlightLinksLspOptions): Promise<LinksData> {
-  const files = await glob('**/[^_]*.{md,mdx}', { cwd: fsPaths.content, onlyFiles: true })
+  let files = await glob('**/[^_]*.{md,mdx}', { cwd: fsPaths.content, onlyFiles: true })
+
+  files = files.filter((file) => {
+    const filename = path.basename(file)
+    return stripExtension(filename) !== '404'
+  })
 
   // TODO(HiDeoo) option to only show same locale links
   // TODO(HiDeoo) of showing all links: sort results, e.g. based on the current locale, file in the same locales should be first

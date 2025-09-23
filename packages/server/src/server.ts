@@ -63,6 +63,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
 
   const result: InitializeResult = {
     capabilities: {
+      // TODO(HiDeoo) triggers
       completionProvider: { resolveProvider: false, triggerCharacters: ['#'] },
       // TODO(HiDeoo) see if possible to disable diagnostics entirely
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },

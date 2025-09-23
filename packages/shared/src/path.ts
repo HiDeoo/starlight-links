@@ -14,7 +14,7 @@ export function slugifyPath(path: string, withTrailingSlash = false, base?: stri
   return withTrailingSlash ? ensureTrailingSlash(pathSlug) : pathSlug
 }
 
-function stripExtension(path: string) {
+export function stripExtension(path: string) {
   const lastPeriodIndex = path.lastIndexOf('.')
   return path.slice(0, lastPeriodIndex === -1 ? undefined : lastPeriodIndex)
 }
