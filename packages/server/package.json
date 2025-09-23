@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
-    "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
     "p-limit": "^7.1.1",
     "starlight-links-shared": "workspace:*",

@@ -5,5 +5,8 @@
   "exports": {
     "./*": "./src/*"
   },
+  "dependencies": {
+    "github-slugger": "^2.0.0"
+  },
   "private": true
 }

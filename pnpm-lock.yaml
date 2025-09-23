@@ -66,9 +66,6 @@ importers:
 
   packages/server:
     dependencies:
-      github-slugger:
-        specifier: ^2.0.0
-        version: 2.0.0
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
@@ -88,7 +85,11 @@ importers:
         specifier: ^1.0.12
         version: 1.0.12
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      github-slugger:
+        specifier: ^2.0.0
+        version: 2.0.0
 
 packages:
 

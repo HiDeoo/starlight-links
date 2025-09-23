@@ -15,6 +15,7 @@ import {
   type Program,
   type StringLiteral,
 } from '@babel/types'
+import { stripLeadingSlash, stripTrailingSlash } from 'starlight-links-shared/path.js'
 import type { StarlightConfig } from 'starlight-links-shared/starlight.js'
 
 // @ts-expect-error - https://github.com/babel/babel/discussions/13093
@@ -107,7 +108,7 @@ function getStarlightConfig(program: Program): StarlightConfig {
     trailingSlash: (trailingSlash as StarlightConfig['trailingSlash'] | undefined) ?? 'ignore',
   }
 
-  if (base) starlightConfig.base = base
+  if (base) starlightConfig.base = stripLeadingSlash(stripTrailingSlash(base))
   if (srcDir) starlightConfig.srcDir = srcDir
   if (defaultLocale) starlightConfig.defaultLocale = defaultLocale
   if (locales) starlightConfig.locales = locales

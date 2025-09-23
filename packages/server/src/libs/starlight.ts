@@ -4,26 +4,25 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import pLimit from 'p-limit'
 import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
+import { slugifyPath } from 'starlight-links-shared/path.js'
 import { glob } from 'tinyglobby'
-
-import { slugifyPath } from './path'
 
 const runWithConcurrency = pLimit(10)
 
 // TODO(HiDeoo) file added, removed, or renamed
-// TODO(HiDeoo) Astro base
+// TODO(HiDeoo) remove 404s
 
-export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promise<LinksData> {
-  const files = await glob('**/[^_]*.{md,mdx}', { cwd: lspOptions.fsPaths.content, onlyFiles: true })
+export async function getLinksData({ config, fsPaths }: StarlightLinksLspOptions): Promise<LinksData> {
+  const files = await glob('**/[^_]*.{md,mdx}', { cwd: fsPaths.content, onlyFiles: true })
 
   // TODO(HiDeoo) option to only show same locale links
   // TODO(HiDeoo) of showing all links: sort results, e.g. based on the current locale, file in the same locales should be first
 
   // eslint-disable-next-line unicorn/no-array-method-this-argument
   const data = await runWithConcurrency.map(files, async (file) => {
-    const fsPath = path.join(lspOptions.fsPaths.content, file)
+    const fsPath = path.join(fsPaths.content, file)
     const frontmatter = await readFrontmatter(fsPath)
-    const slug = frontmatter?.slug ?? slugifyPath(file, lspOptions.config.trailingSlash !== 'never')
+    const slug = frontmatter?.slug ?? slugifyPath(file, config.trailingSlash !== 'never', config.base)
 
     return [
       slug,
