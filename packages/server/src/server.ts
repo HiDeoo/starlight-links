@@ -64,6 +64,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
   const result: InitializeResult = {
     capabilities: {
       completionProvider: { resolveProvider: false, triggerCharacters: ['#'] },
+      // TODO(HiDeoo) see if possible to disable diagnostics entirely
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
     },
@@ -102,6 +103,7 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   const lineStart = text.lastIndexOf('\n', offset - 1) + 1
   const currentLine = text.slice(lineStart, offset)
 
+  // TODO(HiDeoo) other types of links (md, mdx, components, etc.)
   if (!endsWithLinkUrl(currentLine)) return
 
   return [...linksData.entries()].map(([slug, data]) => {

@@ -23,7 +23,7 @@ export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promis
   const data = await runWithConcurrency.map(files, async (file) => {
     const fsPath = path.join(lspOptions.fsPaths.content, file)
     const frontmatter = await readFrontmatter(fsPath)
-    const slug = frontmatter?.slug ?? slugifyPath(file)
+    const slug = frontmatter?.slug ?? slugifyPath(file, lspOptions.config.trailingSlash !== 'never')
 
     return [
       slug,

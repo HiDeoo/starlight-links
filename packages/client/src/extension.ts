@@ -46,6 +46,7 @@ export async function activate(context: ExtensionContext) {
         getStarlightFsPaths(starlightConfigFsPath, starlightConfig),
         starlightConfig,
       ),
+      // TODO(HiDeoo) md/mdx
       synchronize: { fileEvents: workspace.createFileSystemWatcher('**/*.md') },
     },
   )

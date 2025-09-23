@@ -9,5 +9,6 @@ export interface StarlightConfig {
   defaultLocale?: string
   // TODO(HiDeoo) Do we need labels?
   locales?: Record<string, { label: string }>
+  trailingSlash: 'always' | 'never' | 'ignore'
   srcDir?: string
 }

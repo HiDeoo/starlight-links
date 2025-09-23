@@ -98,11 +98,14 @@ function getStarlightConfig(program: Program): StarlightConfig {
   }
 
   const base = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'base')
+  const trailingSlash = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'trailingSlash')
   const srcDir = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'srcDir')
   const defaultLocale = getStringLiteralValueFromObjectExpression(program, starlightConfigAst, 'defaultLocale')
   const locales = getStarlightLocales(program, starlightConfigAst)
 
-  const starlightConfig: StarlightConfig = {}
+  const starlightConfig: StarlightConfig = {
+    trailingSlash: (trailingSlash as StarlightConfig['trailingSlash'] | undefined) ?? 'ignore',
+  }
 
   if (base) starlightConfig.base = base
   if (srcDir) starlightConfig.srcDir = srcDir
