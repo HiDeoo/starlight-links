@@ -8,6 +8,7 @@ import {
   CompletionItemKind,
   type InitializeParams,
   type CompletionParams,
+  type CompletionItem,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
@@ -43,21 +44,6 @@ function runLsp() {
     connection.console.log('🚨 [server.ts:53] diagnostics')
   })
 
-  connection.onCompletionResolve((item) => {
-    connection.console.log('😡😡😡😡😡')
-    connection.console.log(JSON.stringify(item, null, 2))
-
-    // TODO(HiDeoo) What is the point of this, how to see this extra info?
-    if (item.data === 1) {
-      item.detail = 'TypeScript details'
-      item.documentation = 'TypeScript documentation'
-    } else if (item.data === 2) {
-      item.detail = 'JavaScript details'
-      item.documentation = 'JavaScript documentation'
-    }
-    return item
-  })
-
   documents.listen(connection)
   connection.listen()
 }
@@ -77,7 +63,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
 
   const result: InitializeResult = {
     capabilities: {
-      completionProvider: { resolveProvider: true, triggerCharacters: ['#'] },
+      completionProvider: { resolveProvider: false, triggerCharacters: ['#'] },
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
     },
@@ -96,12 +82,10 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
   getLinksData(lspOptions)
     .then((result) => {
       linksData = result
-      // TODO(HiDeoo)
-      connection.console.log('🏃‍➡️🏃‍➡️🏃‍➡️ Links data loaded:')
+      connection.console.info('Links data loaded successfully.')
     })
-    .catch(() => {
-      // TODO(HiDeoo)
-      connection.console.error(`🏃‍➡️🏃‍➡️🏃‍➡️ Failed to load links data`)
+    .catch((error: unknown) => {
+      connection.console.error(`Failed to load links data: ${error instanceof Error ? error.message : String(error)}`)
     })
 
   return result
@@ -120,8 +104,14 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
 
   if (!endsWithLinkUrl(currentLine)) return
 
-  return [...linksData.keys()].map((slug) => ({
-    label: slug,
-    kind: CompletionItemKind.Text,
-  }))
+  return [...linksData.entries()].map(([slug, data]) => {
+    const item: CompletionItem = {
+      kind: CompletionItemKind.File,
+      label: slug,
+    }
+
+    if (data.title) item.labelDetails = { description: data.title }
+
+    return item
+  })
 }
