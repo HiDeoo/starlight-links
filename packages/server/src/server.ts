@@ -17,7 +17,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { endsWithLinkUrl } from './libs/markdown'
+import { endsWithLinkUrl, getPositionInfos } from './libs/markdown'
 import { getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -33,15 +33,6 @@ function runLsp() {
   connection.onInitialize(onConnectionInitialize)
   connection.onInitialized(onConnectionInitialized)
   connection.onCompletion(onConnectionCompletion)
-
-  documents.onDidChangeContent(() => {
-    connection.console.log('🚨 [server.ts:53] change.document:')
-  })
-
-  connection.onDidChangeWatchedFiles((_change) => {
-    // Monitored files have change in VSCode
-    connection.console.log('We received a file change event')
-  })
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -69,7 +60,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
   const result: InitializeResult = {
     capabilities: {
       // TODO(HiDeoo) triggers
-      completionProvider: { resolveProvider: false, triggerCharacters: ['#'] },
+      completionProvider: { resolveProvider: false, triggerCharacters: ['/', '#'] },
       // TODO(HiDeoo) see if possible to disable diagnostics entirely
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -113,10 +104,14 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   const text = document.getText()
   const offset = document.offsetAt(position)
   const lineStart = text.lastIndexOf('\n', offset - 1) + 1
-  const currentLine = text.slice(lineStart, offset)
+  const currentLineToCursor = text.slice(lineStart, offset)
+
+  // TODO(HiDeoo) Bug: typing `/` and accepting a completion results in `//slug-of-the-page`
 
   // TODO(HiDeoo) other types of links (md, mdx, components, etc.)
-  if (!endsWithLinkUrl(currentLine)) return
+  const positionInfos = getPositionInfos(currentLineToCursor)
+  if (!positionInfos.isLinkUrl) return
+  if (positionInfos.linkUrl.startsWith('#')) return
 
   const currentFsPath = fileURLToPath(textDocument.uri)
   const currentLocale = getLocaleFromSlug(

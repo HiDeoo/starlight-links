@@ -74,8 +74,6 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
         getStarlightFsPaths(starlightConfigFsPath, starlightProject),
         starlightProject,
       ),
-      // TODO(HiDeoo) md/mdx
-      synchronize: { fileEvents: workspace.createFileSystemWatcher('**/*.md') },
     },
   )
 
