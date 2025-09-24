@@ -22,7 +22,7 @@ import type { StarlightConfig, StarlightProject } from 'starlight-links-shared/s
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const traverse: typeof babelTraverse = babelTraverse.default ?? babelTraverse
 
-export function getStarlightConfigFromCode(code: string) {
+export function getStarlightProjectFromConfig(code: string) {
   let ast: ParseResult
 
   try {
@@ -34,14 +34,14 @@ export function getStarlightConfigFromCode(code: string) {
     )
   }
 
-  return getStarlightConfig(ast.program)
+  return getStarlightProject(ast.program)
 }
 
 function parseCode(code: string) {
   return parse(code, { sourceType: 'unambiguous', plugins: ['typescript'] })
 }
 
-function getStarlightConfig(program: Program): StarlightProject {
+function getStarlightProject(program: Program): StarlightProject {
   let astroConfigAst: ObjectExpression | undefined
   let starlightConfigAst: ObjectExpression | undefined
 
@@ -49,7 +49,7 @@ function getStarlightConfig(program: Program): StarlightProject {
     ExportDefaultDeclaration(path) {
       if (!isCallExpression(path.node.declaration)) {
         throw new Error(
-          'The default export of the Astro configuration file must be a call to the `defineConfig` function',
+          'The default export of the Astro configuration file must be a call to the `defineConfig` function.',
         )
       }
 
@@ -57,7 +57,7 @@ function getStarlightConfig(program: Program): StarlightProject {
 
       if (!isObjectExpression(configAst)) {
         throw new Error(
-          'The first argument of the `defineConfig` function must be an object containing the Astro configuration',
+          'The first argument of the `defineConfig` function must be an object containing the Astro configuration.',
         )
       }
 
@@ -71,7 +71,7 @@ function getStarlightConfig(program: Program): StarlightProject {
       )
 
       if (!astroIntegrations || !isObjectProperty(astroIntegrations) || !isArrayExpression(astroIntegrations.value)) {
-        throw new Error('The Astro configuration must contain an `integrations` property that must be an array')
+        throw new Error('The Astro configuration must contain an `integrations` property that must be an array.')
       }
 
       const starlightIntegration = astroIntegrations.value.elements.find(
@@ -79,14 +79,14 @@ function getStarlightConfig(program: Program): StarlightProject {
       )
 
       if (!starlightIntegration || !isCallExpression(starlightIntegration)) {
-        throw new Error('Failed to find the `starlight` integration in the Astro configuration')
+        throw new Error('Failed to find the `starlight` integration in the Astro configuration.')
       }
 
       const config = starlightIntegration.arguments[0]
 
       if (!isObjectExpression(config)) {
         throw new Error(
-          'The first argument of the `starlight` integration must be an object containing the Starlight configuration',
+          'The first argument of the `starlight` integration must be an object containing the Starlight configuration.',
         )
       }
 
@@ -95,7 +95,7 @@ function getStarlightConfig(program: Program): StarlightProject {
   })
 
   if (!astroConfigAst || !starlightConfigAst) {
-    throw new Error('Failed to find Starlight configuration in the Astro configuration file')
+    throw new Error('Failed to find Starlight configuration in the Astro configuration file.')
   }
 
   const locales = getStarlightLocales(program, starlightConfigAst)
@@ -145,7 +145,7 @@ function getStarlightLocales(program: Program, starlightConfig: ObjectExpression
     : localesProperty.value
 
   if (!localesObjectExpression) {
-    throw new Error('Failed to find valid `locales` configuration in Starlight configuration')
+    throw new Error('Failed to find valid `locales` configuration in Starlight configuration.')
   }
 
   const localesConfig: NonNullable<StarlightConfig['locales']> = {}
@@ -254,7 +254,7 @@ function getStringLiteralValueFromObjectExpression(
     : property.value
 
   if (!stringLiteral) {
-    throw new Error(`Failed to find valid \`${keyName}\` configuration in Starlight configuration`)
+    throw new Error(`Failed to find valid \`${keyName}\` configuration in Starlight configuration.`)
   }
 
   return stringLiteral.value

@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import { StarlightLinksConfigSection } from 'starlight-links-shared/config.js'
 import { serializeLspOptions } from 'starlight-links-shared/lsp.js'
+import type { StarlightProject } from 'starlight-links-shared/starlight.js'
 import { type ExtensionContext, type LogOutputChannel, window, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
@@ -48,7 +49,14 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
     return
   }
 
-  const starlightProject = await getStarlightProject(starlightConfigFsPath)
+  let starlightProject: StarlightProject
+
+  try {
+    starlightProject = await getStarlightProject(starlightConfigFsPath)
+  } catch (error) {
+    logger.error(error instanceof Error ? error.message : String(error))
+    return
+  }
 
   const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'))
 

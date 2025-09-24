@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { StarlightFsPaths, StarlightProject } from 'starlight-links-shared/starlight.js'
 import { FileType, Uri, workspace, type WorkspaceFolder } from 'vscode'
 
-import { getStarlightConfigFromCode as getStarlightProjectFromConfig } from './ast'
+import { getStarlightProjectFromConfig } from './ast'
 
 // https://github.com/withastro/astro/blob/6b92b3d455cb7b7ac09c5dcc0eceaabec1ba5903/packages/astro/src/core/config/config.ts#L27-L36
 const configFileNames = new Set([
