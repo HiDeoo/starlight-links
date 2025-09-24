@@ -17,7 +17,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { endsWithLinkUrl, getPositionInfos } from './libs/markdown'
+import { getPositionInfos } from './libs/markdown'
 import { getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -106,8 +106,6 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   const lineStart = text.lastIndexOf('\n', offset - 1) + 1
   const currentLineToCursor = text.slice(lineStart, offset)
 
-  // TODO(HiDeoo) Bug: typing `/` and accepting a completion results in `//slug-of-the-page`
-
   // TODO(HiDeoo) other types of links (md, mdx, components, etc.)
   const positionInfos = getPositionInfos(currentLineToCursor)
   if (!positionInfos.isLinkUrl) return
@@ -132,6 +130,13 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
     const item: CompletionItem = {
       kind: CompletionItemKind.File,
       label: data.slug,
+      textEdit: {
+        newText: data.slug,
+        range: {
+          start: document.positionAt(lineStart + positionInfos.linkUrlStart),
+          end: position,
+        },
+      },
     }
 
     if (data.title) item.labelDetails = { description: data.title }
