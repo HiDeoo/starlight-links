@@ -1,3 +1,6 @@
+import { fileURLToPath } from 'node:url'
+
+import { StarlightLinksDefaultConfig } from 'starlight-links-shared/config.js'
 import { deserializeLspOptions, type StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
 import {
   createConnection,
@@ -12,12 +15,15 @@ import {
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
+import { getConfig } from './libs/config'
+import { getLocaleFromSlug } from './libs/i18n'
 import { endsWithLinkUrl } from './libs/markdown'
 import { getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
 const documents = new TextDocuments(TextDocument)
 
+let extConfig = StarlightLinksDefaultConfig
 let lspOptions: StarlightLinksLspOptions | undefined
 let linksData: LinksData = new Map()
 
@@ -25,9 +31,8 @@ runLsp()
 
 function runLsp() {
   connection.onInitialize(onConnectionInitialize)
+  connection.onInitialized(onConnectionInitialized)
   connection.onCompletion(onConnectionCompletion)
-
-  // TODO(HiDeoo) onConfigChange
 
   documents.onDidChangeContent(() => {
     connection.console.log('🚨 [server.ts:53] change.document:')
@@ -81,6 +86,14 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
 
   lspOptions = deserializeLspOptions(initializationOptions)
 
+  return result
+}
+
+async function onConnectionInitialized() {
+  if (!lspOptions) return
+
+  extConfig = await getConfig(connection)
+
   getLinksData(lspOptions)
     .then((result) => {
       linksData = result
@@ -89,8 +102,6 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
     .catch((error: unknown) => {
       connection.console.error(`Failed to load links data: ${error instanceof Error ? error.message : String(error)}`)
     })
-
-  return result
 }
 
 function onConnectionCompletion({ position, textDocument }: CompletionParams) {
@@ -107,14 +118,31 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   // TODO(HiDeoo) other types of links (md, mdx, components, etc.)
   if (!endsWithLinkUrl(currentLine)) return
 
-  return [...linksData.entries()].map(([slug, data]) => {
+  const currentFsPath = fileURLToPath(textDocument.uri)
+  const currentLocale = getLocaleFromSlug(
+    currentFsPath.replace(lspOptions.fsPaths.content, ''),
+    lspOptions.config.locales,
+  )
+
+  const items: CompletionItem[] = []
+
+  for (const [fsPath, data] of linksData) {
+    if (fsPath === currentFsPath) continue
+
+    if (extConfig.useConsistentLocale && lspOptions.config.isMultilingual) {
+      if (currentLocale && data.locale !== currentLocale) continue
+      if (!currentLocale && data.locale) continue
+    }
+
     const item: CompletionItem = {
       kind: CompletionItemKind.File,
-      label: slug,
+      label: data.slug,
     }
 
     if (data.title) item.labelDetails = { description: data.title }
 
-    return item
-  })
+    items.push(item)
+  }
+
+  return items
 }

@@ -7,31 +7,29 @@ import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
 import { slugifyPath, stripExtension } from 'starlight-links-shared/path.js'
 import { glob } from 'tinyglobby'
 
+import { getLocaleFromSlug } from './i18n'
+
 const runWithConcurrency = pLimit(10)
 
 // TODO(HiDeoo) file added, removed, or renamed
 
-export async function getLinksData({ config, fsPaths }: StarlightLinksLspOptions): Promise<LinksData> {
+export async function getLinksData({ config, context, fsPaths }: StarlightLinksLspOptions): Promise<LinksData> {
   let files = await glob('**/[^_]*.{md,mdx}', { cwd: fsPaths.content, onlyFiles: true })
+  files = files.filter((file) => stripExtension(path.basename(file)) !== '404')
 
-  files = files.filter((file) => {
-    const filename = path.basename(file)
-    return stripExtension(filename) !== '404'
-  })
-
-  // TODO(HiDeoo) option to only show same locale links
   // TODO(HiDeoo) of showing all links: sort results, e.g. based on the current locale, file in the same locales should be first
 
   // eslint-disable-next-line unicorn/no-array-method-this-argument
   const data = await runWithConcurrency.map(files, async (file) => {
     const fsPath = path.join(fsPaths.content, file)
     const frontmatter = await readFrontmatter(fsPath)
-    const slug = frontmatter?.slug ?? slugifyPath(file, config.trailingSlash !== 'never', config.base)
+    const slug = frontmatter?.slug ?? slugifyPath(file, context.trailingSlash !== 'never', context.base)
 
     return [
-      slug,
+      fsPath,
       {
-        fsPath,
+        locale: config.isMultilingual ? getLocaleFromSlug(slug, config.locales) : undefined,
+        slug,
         title: frontmatter?.title,
       },
     ] satisfies [LinkDataKey, LinkDataValue]
@@ -82,7 +80,8 @@ async function readFrontmatter(path: string) {
 type LinkDataKey = string
 
 interface LinkDataValue {
-  fsPath: string
+  locale?: string | undefined
+  slug: string
   title?: string | undefined
 }
 

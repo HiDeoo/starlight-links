@@ -47,13 +47,20 @@
     "configuration": {
       "title": "Starlight Links",
       "properties": {
-        "starlight-links.configDirectories": {
+        "starlightLinks.configDirectories": {
           "default": [
             ".",
             "./docs"
           ],
           "description": "The directories to look for Starlight configuration files in (relative to the workspace root).",
-          "type": "array"
+          "type": "array",
+          "order": 0
+        },
+        "starlightLinks.useConsistentLocale": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "// TODO(HiDeoo) ",
+          "order": 1
         }
       }
     }

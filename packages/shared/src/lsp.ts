@@ -1,8 +1,8 @@
-import type { StarlightConfig, StarlightFsPaths } from './starlight'
+import type { StarlightFsPaths, StarlightProject } from './starlight'
 
-export function serializeLspOptions(fsPaths: StarlightFsPaths, config: StarlightConfig): StarlightLinksLspOptions {
+export function serializeLspOptions(fsPaths: StarlightFsPaths, project: StarlightProject): StarlightLinksLspOptions {
   return {
-    config,
+    ...project,
     fsPaths,
   }
 }
@@ -11,7 +11,6 @@ export function deserializeLspOptions(options: unknown): StarlightLinksLspOption
   return options as StarlightLinksLspOptions
 }
 
-export interface StarlightLinksLspOptions {
-  config: StarlightConfig
+export interface StarlightLinksLspOptions extends StarlightProject {
   fsPaths: StarlightFsPaths
 }

@@ -16,7 +16,7 @@ import {
   type StringLiteral,
 } from '@babel/types'
 import { stripLeadingSlash, stripTrailingSlash } from 'starlight-links-shared/path.js'
-import type { StarlightConfig } from 'starlight-links-shared/starlight.js'
+import type { StarlightConfig, StarlightProject } from 'starlight-links-shared/starlight.js'
 
 // @ts-expect-error - https://github.com/babel/babel/discussions/13093
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -41,7 +41,7 @@ function parseCode(code: string) {
   return parse(code, { sourceType: 'unambiguous', plugins: ['typescript'] })
 }
 
-function getStarlightConfig(program: Program): StarlightConfig {
+function getStarlightConfig(program: Program): StarlightProject {
   let astroConfigAst: ObjectExpression | undefined
   let starlightConfigAst: ObjectExpression | undefined
 
@@ -98,22 +98,30 @@ function getStarlightConfig(program: Program): StarlightConfig {
     throw new Error('Failed to find Starlight configuration in the Astro configuration file')
   }
 
+  const locales = getStarlightLocales(program, starlightConfigAst)
+
   const base = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'base')
   const trailingSlash = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'trailingSlash')
   const srcDir = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'srcDir')
-  const defaultLocale = getStringLiteralValueFromObjectExpression(program, starlightConfigAst, 'defaultLocale')
-  const locales = getStarlightLocales(program, starlightConfigAst)
 
-  const starlightConfig: StarlightConfig = {
-    trailingSlash: (trailingSlash as StarlightConfig['trailingSlash'] | undefined) ?? 'ignore',
+  const starlightProject: StarlightProject = {
+    config: {
+      isMultilingual: false,
+    },
+    context: {
+      trailingSlash: (trailingSlash as StarlightProject['context']['trailingSlash'] | undefined) ?? 'ignore',
+    },
   }
 
-  if (base) starlightConfig.base = stripLeadingSlash(stripTrailingSlash(base))
-  if (srcDir) starlightConfig.srcDir = srcDir
-  if (defaultLocale) starlightConfig.defaultLocale = defaultLocale
-  if (locales) starlightConfig.locales = locales
+  if (locales) {
+    starlightProject.config.locales = locales
+    if (Object.keys(locales).length > 1) starlightProject.config.isMultilingual = true
+  }
 
-  return starlightConfig
+  if (base) starlightProject.context.base = stripLeadingSlash(stripTrailingSlash(base))
+  if (srcDir) starlightProject.context.srcDir = srcDir
+
+  return starlightProject
 }
 
 function getStarlightLocales(program: Program, starlightConfig: ObjectExpression) {
@@ -162,7 +170,7 @@ function getStarlightLocales(program: Program, starlightConfig: ObjectExpression
     }
 
     if (localeLabel) {
-      localesConfig[name] = { label: localeLabel }
+      localesConfig[name] = localeLabel
     }
   }
 

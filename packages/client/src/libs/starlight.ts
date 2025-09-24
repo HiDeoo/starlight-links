@@ -1,9 +1,9 @@
 import path from 'node:path'
 
-import type { StarlightConfig, StarlightFsPaths } from 'starlight-links-shared/starlight.js'
+import type { StarlightFsPaths, StarlightProject } from 'starlight-links-shared/starlight.js'
 import { FileType, Uri, workspace, type WorkspaceFolder } from 'vscode'
 
-import { getStarlightConfigFromCode } from './ast'
+import { getStarlightConfigFromCode as getStarlightProjectFromConfig } from './ast'
 
 // https://github.com/withastro/astro/blob/6b92b3d455cb7b7ac09c5dcc0eceaabec1ba5903/packages/astro/src/core/config/config.ts#L27-L36
 const configFileNames = new Set([
@@ -22,11 +22,11 @@ export async function getStarlightConfigFsPath(workspaceFolder: WorkspaceFolder,
   return astroConfigUri.fsPath
 }
 
-export async function getStarlightConfig(fsPath: string) {
+export async function getStarlightProject(fsPath: string) {
   const configData = await workspace.fs.readFile(Uri.file(fsPath))
   const configStr = Buffer.from(configData).toString('utf8')
 
-  return getStarlightConfigFromCode(configStr)
+  return getStarlightProjectFromConfig(configStr)
 }
 
 async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirectories: string[]) {
@@ -34,6 +34,7 @@ async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirecto
     const uri = Uri.joinPath(workspaceFolder.uri, configDirectory)
 
     try {
+      await workspace.fs.stat(uri)
       const entries = await workspace.fs.readDirectory(uri)
 
       for (const [name, type] of entries) {
@@ -49,10 +50,10 @@ async function getAstroConfigUri(workspaceFolder: WorkspaceFolder, configDirecto
   return
 }
 
-export function getStarlightFsPaths(configFsPath: string, starlightConfig: StarlightConfig): StarlightFsPaths {
+export function getStarlightFsPaths(configFsPath: string, project: StarlightProject): StarlightFsPaths {
   return {
     config: configFsPath,
-    content: Uri.joinPath(Uri.file(path.dirname(configFsPath)), starlightConfig.srcDir ?? 'src', 'content', 'docs')
+    content: Uri.joinPath(Uri.file(path.dirname(configFsPath)), project.context.srcDir ?? 'src', 'content', 'docs')
       .fsPath,
   }
 }
