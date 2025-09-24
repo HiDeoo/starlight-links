@@ -12,13 +12,14 @@ import {
   type InitializeParams,
   type CompletionParams,
   type CompletionItem,
+  type Position,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { getPositionInfos } from './libs/markdown'
-import { getLinksData, type LinksData } from './libs/starlight'
+import { getPositionInfos, type MarkdownLinkPositionInfos } from './libs/markdown'
+import { getContentFragments, getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
 const documents = new TextDocuments(TextDocument)
@@ -61,6 +62,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
     capabilities: {
       // TODO(HiDeoo) triggers
       completionProvider: { resolveProvider: false, triggerCharacters: ['/', '#'] },
+      // TODO(HiDeoo) is it possible to override the Markdown LSP diagnostics when a link is valid?
       // TODO(HiDeoo) see if possible to disable diagnostics entirely
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -95,7 +97,7 @@ async function onConnectionInitialized() {
     })
 }
 
-function onConnectionCompletion({ position, textDocument }: CompletionParams) {
+async function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   if (!lspOptions) return
 
   const document = documents.get(textDocument.uri)
@@ -106,10 +108,28 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
   const lineStart = text.lastIndexOf('\n', offset - 1) + 1
   const currentLineToCursor = text.slice(lineStart, offset)
 
-  // TODO(HiDeoo) other types of links (md, mdx, components, etc.)
+  // TODO(HiDeoo) other types of links (md, mdx, components, Markdown references, etc.)
   const positionInfos = getPositionInfos(currentLineToCursor)
-  if (!positionInfos.isLinkUrl) return
-  if (positionInfos.linkUrl.startsWith('#')) return
+
+  if (positionInfos.type === 'unknown') return
+  if (positionInfos.url.startsWith('#')) return
+
+  const items: CompletionItem[] = []
+  const context: CompletionItemContext = { document, lineStart, position, positionInfos }
+
+  if (positionInfos.type === 'fragment') {
+    const linkData = linksData.get(positionInfos.url)
+    if (!linkData) return
+
+    // TODO(HiDeoo) cache headings until a file is edited
+    const fragments = await getContentFragments(linkData.fsPath)
+
+    for (const fragment of fragments) {
+      items.push(makeCompletionItem(context, `${positionInfos.url}#${fragment.slug}`, fragment.label))
+    }
+
+    return items
+  }
 
   const currentFsPath = fileURLToPath(textDocument.uri)
   const currentLocale = getLocaleFromSlug(
@@ -117,32 +137,45 @@ function onConnectionCompletion({ position, textDocument }: CompletionParams) {
     lspOptions.config.locales,
   )
 
-  const items: CompletionItem[] = []
-
-  for (const [fsPath, data] of linksData) {
-    if (fsPath === currentFsPath) continue
+  for (const [slug, data] of linksData) {
+    if (data.fsPath === currentFsPath) continue
 
     if (extConfig.useConsistentLocale && lspOptions.config.isMultilingual) {
       if (currentLocale && data.locale !== currentLocale) continue
       if (!currentLocale && data.locale) continue
     }
 
-    const item: CompletionItem = {
-      kind: CompletionItemKind.File,
-      label: data.slug,
-      textEdit: {
-        newText: data.slug,
-        range: {
-          start: document.positionAt(lineStart + positionInfos.linkUrlStart),
-          end: position,
-        },
-      },
-    }
-
-    if (data.title) item.labelDetails = { description: data.title }
-
-    items.push(item)
+    items.push(makeCompletionItem(context, slug, data.title))
   }
 
   return items
+}
+
+function makeCompletionItem(
+  { document, lineStart, position, positionInfos }: CompletionItemContext,
+  label: string,
+  details?: string,
+): CompletionItem {
+  const item: CompletionItem = {
+    kind: CompletionItemKind.File,
+    label,
+    textEdit: {
+      newText: label,
+      range: {
+        start: document.positionAt(lineStart + positionInfos.start),
+        end: position,
+      },
+    },
+  }
+
+  if (details) item.labelDetails = { description: details }
+
+  return item
+}
+
+interface CompletionItemContext {
+  document: TextDocument
+  lineStart: number
+  position: Position
+  positionInfos: MarkdownLinkPositionInfos
 }

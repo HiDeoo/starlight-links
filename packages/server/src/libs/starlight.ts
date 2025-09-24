@@ -8,6 +8,7 @@ import { slugifyPath, stripExtension } from 'starlight-links-shared/path.js'
 import { glob } from 'tinyglobby'
 
 import { getLocaleFromSlug } from './i18n'
+import { getFragments } from './markdown'
 
 const runWithConcurrency = pLimit(10)
 
@@ -26,16 +27,21 @@ export async function getLinksData({ config, context, fsPaths }: StarlightLinksL
     const slug = frontmatter?.slug ?? slugifyPath(file, context.trailingSlash !== 'never', context.base)
 
     return [
-      fsPath,
+      slug,
       {
+        fsPath,
         locale: config.isMultilingual ? getLocaleFromSlug(slug, config.locales) : undefined,
-        slug,
         title: frontmatter?.title,
       },
     ] satisfies [LinkDataKey, LinkDataValue]
   })
 
   return new Map(data)
+}
+
+export async function getContentFragments(path: string) {
+  const content = await readContent(path)
+  return getFragments(content)
 }
 
 async function readFrontmatter(path: string) {
@@ -77,11 +83,16 @@ async function readFrontmatter(path: string) {
   return
 }
 
+async function readContent(path: string) {
+  const file = await fs.readFile(path, 'utf8')
+  return matter(file).content
+}
+
 type LinkDataKey = string
 
 interface LinkDataValue {
+  fsPath: string
   locale?: string | undefined
-  slug: string
   title?: string | undefined
 }
 

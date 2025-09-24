@@ -1,4 +1,8 @@
-import { slug } from 'github-slugger'
+import Slugger, { slug } from 'github-slugger'
+
+export function getNewSlugger() {
+  return new Slugger()
+}
 
 export function slugifyPath(path: string, withTrailingSlash = false, base?: string): string {
   const pathSlug = ensureLeadingSlash(
