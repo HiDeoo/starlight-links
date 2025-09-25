@@ -24,7 +24,7 @@ export async function getStarlightConfigFsPath(workspaceFolder: WorkspaceFolder,
 
 export async function getStarlightProject(fsPath: string) {
   const configData = await workspace.fs.readFile(Uri.file(fsPath))
-  const configStr = Buffer.from(configData).toString('utf8')
+  const configStr = new TextDecoder().decode(configData)
 
   return getStarlightProjectFromConfig(configStr)
 }

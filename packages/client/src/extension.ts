@@ -1,9 +1,15 @@
-import path from 'node:path'
-
 import { StarlightLinksConfigSection } from 'starlight-links-shared/config.js'
 import { serializeLspOptions } from 'starlight-links-shared/lsp.js'
 import type { StarlightProject } from 'starlight-links-shared/starlight.js'
-import { type ExtensionContext, type LogOutputChannel, window, workspace } from 'vscode'
+import {
+  Disposable,
+  type ExtensionContext,
+  type LogOutputChannel,
+  ProgressLocation,
+  Uri,
+  window,
+  workspace,
+} from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
 import { getConfig } from './libs/config'
@@ -21,7 +27,7 @@ export async function activate(context: ExtensionContext) {
       logger.info('Starlight Links configuration changed.')
       await startLspServer(context, logger)
     }),
-    { dispose: () => client?.stop() },
+    new Disposable(() => client?.stop()),
   )
 
   await startLspServer(context, logger)
@@ -32,50 +38,58 @@ export function deactivate() {
 }
 
 async function startLspServer(context: ExtensionContext, logger: LogOutputChannel) {
-  await client?.stop()
-
-  if (!isWorkspaceWithSingleFolder(workspace.workspaceFolders)) {
-    logger.info('Starlight Links only supports single folder workspaces.')
-    return
-  }
-
-  const starlightConfigFsPath = await getStarlightConfigFsPath(
-    workspace.workspaceFolders[0],
-    getConfig().configDirectories,
-  )
-
-  if (!starlightConfigFsPath) {
-    logger.info('No Starlight configuration file found in the current workspace.')
-    return
-  }
-
-  let starlightProject: StarlightProject
-
-  try {
-    starlightProject = await getStarlightProject(starlightConfigFsPath)
-  } catch (error) {
-    logger.error(error instanceof Error ? error.message : String(error))
-    return
-  }
-
-  const serverModule = context.asAbsolutePath(path.join('dist', 'server.js'))
-
-  client = new LanguageClient(
-    'starlight-links',
-    'Starlight Links',
+  await window.withProgress(
     {
-      run: { module: serverModule, transport: TransportKind.ipc },
-      debug: { module: serverModule, transport: TransportKind.ipc },
+      location: ProgressLocation.Window,
+      title: 'Starting Starlight Links…',
     },
-    {
-      // TODO(HiDeoo) mdx
-      documentSelector: [{ scheme: 'file', language: 'markdown' }],
-      initializationOptions: serializeLspOptions(
-        getStarlightFsPaths(starlightConfigFsPath, starlightProject),
-        starlightProject,
-      ),
+    async () => {
+      await client?.stop()
+
+      if (!isWorkspaceWithSingleFolder(workspace.workspaceFolders)) {
+        logger.info('Starlight Links only supports single folder workspaces.')
+        return
+      }
+
+      const starlightConfigFsPath = await getStarlightConfigFsPath(
+        workspace.workspaceFolders[0],
+        getConfig().configDirectories,
+      )
+
+      if (!starlightConfigFsPath) {
+        logger.info('No Starlight configuration file found in the current workspace.')
+        return
+      }
+
+      let starlightProject: StarlightProject
+
+      try {
+        starlightProject = await getStarlightProject(starlightConfigFsPath)
+      } catch (error) {
+        logger.error(error instanceof Error ? error.message : String(error))
+        return
+      }
+
+      const serverModule = Uri.joinPath(context.extensionUri, 'dist', 'server.js').fsPath
+
+      client = new LanguageClient(
+        'starlight-links',
+        'Starlight Links',
+        {
+          run: { module: serverModule, transport: TransportKind.ipc },
+          debug: { module: serverModule, transport: TransportKind.ipc },
+        },
+        {
+          // TODO(HiDeoo) mdx
+          documentSelector: [{ scheme: 'file', language: 'markdown' }],
+          initializationOptions: serializeLspOptions(
+            getStarlightFsPaths(starlightConfigFsPath, starlightProject),
+            starlightProject,
+          ),
+        },
+      )
+
+      await client.start()
     },
   )
-
-  await client.start()
 }

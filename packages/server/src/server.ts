@@ -121,7 +121,6 @@ async function onConnectionCompletion({ position, textDocument }: CompletionPara
     const linkData = linksData.get(positionInfos.url)
     if (!linkData) return
 
-    // TODO(HiDeoo) cache headings until a file is edited
     const fragments = await getContentFragments(linkData.fsPath)
 
     for (const fragment of fragments) {
