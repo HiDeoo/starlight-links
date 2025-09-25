@@ -38,6 +38,7 @@ export async function getLinkData(lspOptions: StarlightLinksLspOptions, fsPath: 
       fsPath,
       locale: config.isMultilingual ? getLocaleFromSlug(slug, config.locales) : undefined,
       title: frontmatter?.title,
+      description: frontmatter?.description,
     },
   ] satisfies [LinkDataKey, LinkDataValue]
 }
@@ -101,11 +102,13 @@ interface LinkDataValue {
   fsPath: string
   locale?: string | undefined
   title?: string | undefined
+  description?: string | undefined
 }
 
 export type LinksData = Map<LinkDataKey, LinkDataValue>
 
 interface StarlightFrontmatter {
   title: string
+  description?: string
   slug?: string
 }

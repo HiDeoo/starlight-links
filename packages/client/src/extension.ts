@@ -19,8 +19,6 @@ import { isWorkspaceWithSingleFolder } from './libs/vsc'
 
 let client: LanguageClient | undefined
 
-// TODO(HiDeoo) hover link
-
 export async function activate(context: ExtensionContext) {
   const logger = window.createOutputChannel('Starlight Links', { log: true })
 

@@ -19,6 +19,8 @@ import {
   type TextDocumentPositionParams,
   type DocumentLinkParams,
   type DocumentLink,
+  type HoverParams,
+  MarkupKind,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
@@ -43,6 +45,7 @@ function runLsp() {
   connection.onDidChangeWatchedFiles(onWatchedFilesChange)
   connection.onDefinition(onConnectionDefinition)
   connection.onDocumentLinks(onConnectionDocumentLinks)
+  connection.onHover(onConnectionHover)
 
   documents.listen(connection)
   connection.listen()
@@ -54,6 +57,7 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
       completionProvider: { resolveProvider: false, triggerCharacters: ['/', '#'] },
       definitionProvider: true,
       documentLinkProvider: { resolveProvider: true },
+      hoverProvider: true,
       textDocumentSync: TextDocumentSyncKind.Incremental,
     },
   }
@@ -164,7 +168,7 @@ function onConnectionDefinition(definition: DefinitionParams) {
   if (markdownContent.url.startsWith('#')) return
 
   const linkData = linksData.get(markdownContent.url)
-  if (!linkData) return null
+  if (!linkData) return
 
   const position = { line: 0, character: 0 }
 
@@ -200,6 +204,35 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
   }
 
   return links
+}
+
+function onConnectionHover(hover: HoverParams) {
+  if (!lspOptions) return
+
+  const line = getLineAtPosition(hover)
+  if (!line) return
+
+  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
+
+  if (markdownContent.type === 'unknown') return
+  if (markdownContent.url.startsWith('#')) return
+
+  const linkData = linksData.get(markdownContent.url)
+  if (!linkData) return
+
+  let value = `## ${linkData.title}`
+  if (linkData.description) value += `\n\n${linkData.description}`
+
+  return {
+    contents: {
+      kind: MarkupKind.Markdown,
+      value,
+    },
+    range: {
+      start: line.document.positionAt(line.start + markdownContent.start),
+      end: line.document.positionAt(line.start + markdownContent.end),
+    },
+  }
 }
 
 function getLineAtPosition({ position, textDocument }: TextDocumentPositionParams) {
