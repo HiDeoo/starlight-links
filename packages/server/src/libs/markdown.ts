@@ -4,31 +4,67 @@ import remarkMdx from 'remark-mdx'
 import { getNewSlugger } from 'starlight-links-shared/path.js'
 import { visit } from 'unist-util-visit'
 
-const linkUrlRegex = /\[(?:[^\]]*)\]\((?<link>[^)]*)$/
+const linkUrlRegex = /\[(?<text>[^\]]*)\]\((?<url>[^)]*)\)/g
 
-const processor = remark().use(remarkMdx) //.use(remarkHeadingId)
+const processor = remark().use(remarkMdx)
 
-export function getPositionInfos(text: string): MarkdownPositionInfos {
-  const match = linkUrlRegex.exec(text)
-  if (!match?.groups) return { type: 'unknown' }
+export function getMarkdownContentAtPosition(line: string, position: number): MarkdownContent {
+  const links = getLineMarkdownLinks(line)
 
-  const linkUrl = match.groups['link'] ?? ''
-  const start = text.length - linkUrl.length
+  for (const link of links) {
+    if (position < link.start) continue
+    if (position > link.end) continue
 
-  if (!linkUrl.includes('#'))
-    return {
-      type: 'url',
-      start,
-      url: linkUrl,
+    return link
+  }
+
+  return { type: 'unknown' }
+}
+
+export function getMarkdownLinks(text: string): MarkdownLink[] {
+  const links: MarkdownLink[] = []
+  const lines = text.split('\n')
+
+  for (const [index, line] of lines.entries()) {
+    links.push(...getLineMarkdownLinks(line, index))
+  }
+
+  return links
+}
+
+function getLineMarkdownLinks(line: string, number = 0): MarkdownLink[] {
+  const links: MarkdownLink[] = []
+
+  let match: RegExpExecArray | null
+  linkUrlRegex.lastIndex = 0
+
+  while ((match = linkUrlRegex.exec(line))) {
+    const start = match.index + (match[1]?.length ?? 0) + 3
+    const end = start + (match[2]?.length ?? 0)
+    const url = match[2] ?? ''
+
+    if (url.includes('#')) {
+      const [baseUrl] = url.split('#')
+
+      links.push({
+        type: 'fragment',
+        line: number,
+        start,
+        end,
+        url: baseUrl ?? '',
+      })
     }
 
-  const lastSlashIndex = linkUrl.lastIndexOf('/')
-
-  return {
-    type: 'fragment',
-    start,
-    url: linkUrl.slice(0, lastSlashIndex + 1),
+    links.push({
+      type: 'url',
+      line: number,
+      start,
+      end,
+      url: url,
+    })
   }
+
+  return links
 }
 
 export function getFragments(content: string): MarkdownFragment[] {
@@ -125,20 +161,24 @@ export function getFragments(content: string): MarkdownFragment[] {
   return fragments
 }
 
-type MarkdownPositionInfos =
+type MarkdownContent =
   | { type: 'unknown' }
   | {
       type: 'url'
+      line: number
       start: number
+      end: number
       url: string
     }
   | {
       type: 'fragment'
+      line: number
       start: number
+      end: number
       url: string
     }
 
-export type MarkdownLinkPositionInfos = Exclude<MarkdownPositionInfos, { type: 'unknown' }>
+export type MarkdownLink = Exclude<MarkdownContent, { type: 'unknown' }>
 
 interface MarkdownFragment {
   label?: string

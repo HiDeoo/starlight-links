@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { StarlightLinksDefaultConfig } from 'starlight-links-shared/config.js'
 import { deserializeLspOptions, type StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
@@ -12,15 +12,19 @@ import {
   type InitializeParams,
   type CompletionParams,
   type CompletionItem,
-  type Position,
   type DidChangeWatchedFilesParams,
   FileChangeType,
+  type DefinitionParams,
+  LocationLink,
+  type TextDocumentPositionParams,
+  type DocumentLinkParams,
+  type DocumentLink,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { getPositionInfos, type MarkdownLinkPositionInfos } from './libs/markdown'
+import { getMarkdownContentAtPosition, getMarkdownLinks, type MarkdownLink } from './libs/markdown'
 import { getContentFragments, getContentFsPath, getLinkData, getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -37,6 +41,8 @@ function runLsp() {
   connection.onInitialized(onConnectionInitialized)
   connection.onCompletion(onConnectionCompletion)
   connection.onDidChangeWatchedFiles(onWatchedFilesChange)
+  connection.onDefinition(onConnectionDefinition)
+  connection.onDocumentLinks(onConnectionDocumentLinks)
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -63,8 +69,9 @@ function onConnectionInitialize({ initializationOptions }: InitializeParams) {
 
   const result: InitializeResult = {
     capabilities: {
-      // TODO(HiDeoo) triggers
       completionProvider: { resolveProvider: false, triggerCharacters: ['/', '#'] },
+      definitionProvider: true,
+      documentLinkProvider: { resolveProvider: true },
       // TODO(HiDeoo) is it possible to override the Markdown LSP diagnostics when a link is valid?
       // TODO(HiDeoo) see if possible to disable diagnostics entirely
       diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
@@ -100,40 +107,39 @@ async function onConnectionInitialized() {
     })
 }
 
-async function onConnectionCompletion({ position, textDocument }: CompletionParams) {
+async function onConnectionCompletion(completion: CompletionParams) {
   if (!lspOptions) return
 
-  const document = documents.get(textDocument.uri)
-  if (!document) return
-
-  const text = document.getText()
-  const offset = document.offsetAt(position)
-  const lineStart = text.lastIndexOf('\n', offset - 1) + 1
-  const currentLineToCursor = text.slice(lineStart, offset)
+  const line = getLineAtPosition(completion)
+  if (!line) return
 
   // TODO(HiDeoo) other types of links (md, mdx, components, Markdown references, etc.)
-  const positionInfos = getPositionInfos(currentLineToCursor)
+  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
 
-  if (positionInfos.type === 'unknown') return
-  if (positionInfos.url.startsWith('#')) return
+  if (markdownContent.type === 'unknown') return
+  if (markdownContent.url.startsWith('#')) return
 
   const items: CompletionItem[] = []
-  const context: CompletionItemContext = { document, lineStart, position, positionInfos }
+  const context: CompletionItemContext = {
+    document: line.document,
+    lineStart: line.start,
+    markdownLink: markdownContent,
+  }
 
-  if (positionInfos.type === 'fragment') {
-    const linkData = linksData.get(positionInfos.url)
+  if (markdownContent.type === 'fragment') {
+    const linkData = linksData.get(markdownContent.url)
     if (!linkData) return
 
     const fragments = await getContentFragments(linkData.fsPath)
 
     for (const fragment of fragments) {
-      items.push(makeCompletionItem(context, `${positionInfos.url}#${fragment.slug}`, fragment.label))
+      items.push(makeCompletionItem(context, `${markdownContent.url}#${fragment.slug}`, fragment.label))
     }
 
     return items
   }
 
-  const currentFsPath = fileURLToPath(textDocument.uri)
+  const currentFsPath = fileURLToPath(completion.textDocument.uri)
   const currentLocale = getLocaleFromSlug(getContentFsPath(lspOptions, currentFsPath), lspOptions.config.locales)
 
   for (const [slug, data] of linksData) {
@@ -174,8 +180,97 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
   }
 }
 
+function onConnectionDefinition(definition: DefinitionParams) {
+  if (!lspOptions) return
+
+  const line = getLineAtPosition(definition)
+  if (!line) return
+
+  // TODO(HiDeoo) other types of links (md, mdx, components, Markdown references, etc.)
+  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
+
+  if (markdownContent.type === 'unknown') return
+  if (markdownContent.url.startsWith('#')) return
+
+  const linkData = linksData.get(markdownContent.url)
+  if (!linkData) return null
+
+  // TODO(HiDeoo) fragments
+
+  return [
+    LocationLink.create(
+      pathToFileURL(linkData.fsPath).toString(),
+      {
+        start: {
+          line: 0,
+          character: 0,
+        },
+        end: {
+          line: 0,
+          character: 0,
+        },
+      },
+      {
+        start: {
+          line: 0,
+          character: 0,
+        },
+        end: {
+          line: 0,
+          character: 0,
+        },
+      },
+    ),
+  ]
+}
+
+function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
+  if (!lspOptions) return []
+
+  const document = documents.get(textDocument.uri)
+  if (!document) return []
+
+  const links: DocumentLink[] = []
+  const markdownLinks = getMarkdownLinks(document.getText())
+
+  for (const markdownLink of markdownLinks) {
+    const linkData = linksData.get(markdownLink.url)
+    if (!linkData) continue
+
+    // TODO(HiDeoo) fragments
+
+    links.push({
+      target: pathToFileURL(linkData.fsPath).toString(),
+      range: {
+        start: document.positionAt(document.offsetAt({ line: markdownLink.line, character: markdownLink.start })),
+        end: document.positionAt(document.offsetAt({ line: markdownLink.line, character: markdownLink.end })),
+      },
+    })
+  }
+
+  return links
+}
+
+function getLineAtPosition({ position, textDocument }: TextDocumentPositionParams) {
+  const document = documents.get(textDocument.uri)
+  if (!document) return
+
+  const text = document.getText()
+  const offset = document.offsetAt(position)
+  const lineStart = text.lastIndexOf('\n', offset - 1) + 1
+  const lineEnd = text.indexOf('\n', offset)
+  const currentLine = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd)
+
+  return {
+    document,
+    position: offset - lineStart,
+    start: lineStart,
+    text: currentLine,
+  }
+}
+
 function makeCompletionItem(
-  { document, lineStart, position, positionInfos }: CompletionItemContext,
+  { document, lineStart, markdownLink }: CompletionItemContext,
   label: string,
   details?: string,
 ): CompletionItem {
@@ -185,8 +280,8 @@ function makeCompletionItem(
     textEdit: {
       newText: label,
       range: {
-        start: document.positionAt(lineStart + positionInfos.start),
-        end: position,
+        start: document.positionAt(lineStart + markdownLink.start),
+        end: document.positionAt(lineStart + markdownLink.end),
       },
     },
   }
@@ -199,6 +294,5 @@ function makeCompletionItem(
 interface CompletionItemContext {
   document: TextDocument
   lineStart: number
-  position: Position
-  positionInfos: MarkdownLinkPositionInfos
+  markdownLink: MarkdownLink
 }
