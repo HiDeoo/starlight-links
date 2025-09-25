@@ -12,31 +12,38 @@ import { getFragments } from './markdown'
 
 const runWithConcurrency = pLimit(10)
 
-// TODO(HiDeoo) file added, removed, or renamed
-
-export async function getLinksData({ config, context, fsPaths }: StarlightLinksLspOptions): Promise<LinksData> {
-  let files = await glob('**/[^_]*.{md,mdx}', { cwd: fsPaths.content, onlyFiles: true })
+export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promise<LinksData> {
+  let files = await glob('**/[^_]*.{md,mdx}', { cwd: lspOptions.fsPaths.content, onlyFiles: true })
   files = files.filter((file) => stripExtension(path.basename(file)) !== '404')
 
   // TODO(HiDeoo) of showing all links: sort results, e.g. based on the current locale, file in the same locales should be first
 
   // eslint-disable-next-line unicorn/no-array-method-this-argument
-  const data = await runWithConcurrency.map(files, async (file) => {
-    const fsPath = path.join(fsPaths.content, file)
-    const frontmatter = await readFrontmatter(fsPath)
-    const slug = frontmatter?.slug ?? slugifyPath(file, context.trailingSlash !== 'never', context.base)
-
-    return [
-      slug,
-      {
-        fsPath,
-        locale: config.isMultilingual ? getLocaleFromSlug(slug, config.locales) : undefined,
-        title: frontmatter?.title,
-      },
-    ] satisfies [LinkDataKey, LinkDataValue]
-  })
+  const data = await runWithConcurrency.map(files, async (file) =>
+    getLinkData(lspOptions, path.join(lspOptions.fsPaths.content, file)),
+  )
 
   return new Map(data)
+}
+
+export async function getLinkData(lspOptions: StarlightLinksLspOptions, fsPath: string, relativeFsPath?: string) {
+  const { config, context } = lspOptions
+  const frontmatter = await readFrontmatter(fsPath)
+  relativeFsPath ??= getContentFsPath(lspOptions, fsPath)
+  const slug = frontmatter?.slug ?? slugifyPath(relativeFsPath, context.trailingSlash !== 'never', context.base)
+
+  return [
+    slug,
+    {
+      fsPath,
+      locale: config.isMultilingual ? getLocaleFromSlug(slug, config.locales) : undefined,
+      title: frontmatter?.title,
+    },
+  ] satisfies [LinkDataKey, LinkDataValue]
+}
+
+export function getContentFsPath({ fsPaths }: StarlightLinksLspOptions, fsPath: string) {
+  return fsPath.replace(fsPaths.content, '')
 }
 
 export async function getContentFragments(path: string) {

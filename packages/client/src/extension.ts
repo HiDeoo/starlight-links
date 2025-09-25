@@ -6,6 +6,7 @@ import {
   type ExtensionContext,
   type LogOutputChannel,
   ProgressLocation,
+  RelativePattern,
   Uri,
   window,
   workspace,
@@ -17,6 +18,8 @@ import { getStarlightProject, getStarlightConfigFsPath, getStarlightFsPaths } fr
 import { isWorkspaceWithSingleFolder } from './libs/vsc'
 
 let client: LanguageClient | undefined
+
+// TODO(HiDeoo) hover link
 
 export async function activate(context: ExtensionContext) {
   const logger = window.createOutputChannel('Starlight Links', { log: true })
@@ -70,6 +73,10 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
         return
       }
 
+      const starlightFsPaths = getStarlightFsPaths(starlightConfigFsPath, starlightProject)
+      // TODO(HiDeoo) mdx
+      const contentPattern = new RelativePattern(starlightFsPaths.content, '**/*.md')
+
       const serverModule = Uri.joinPath(context.extensionUri, 'dist', 'server.js').fsPath
 
       client = new LanguageClient(
@@ -82,10 +89,10 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
         {
           // TODO(HiDeoo) mdx
           documentSelector: [{ scheme: 'file', language: 'markdown' }],
-          initializationOptions: serializeLspOptions(
-            getStarlightFsPaths(starlightConfigFsPath, starlightProject),
-            starlightProject,
-          ),
+          initializationOptions: serializeLspOptions(starlightFsPaths, starlightProject),
+          synchronize: {
+            fileEvents: workspace.createFileSystemWatcher(contentPattern, false, true, false),
+          },
         },
       )
 

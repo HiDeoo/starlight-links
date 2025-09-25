@@ -13,13 +13,15 @@ import {
   type CompletionParams,
   type CompletionItem,
   type Position,
+  type DidChangeWatchedFilesParams,
+  FileChangeType,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
 import { getPositionInfos, type MarkdownLinkPositionInfos } from './libs/markdown'
-import { getContentFragments, getLinksData, type LinksData } from './libs/starlight'
+import { getContentFragments, getContentFsPath, getLinkData, getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
 const documents = new TextDocuments(TextDocument)
@@ -34,6 +36,7 @@ function runLsp() {
   connection.onInitialize(onConnectionInitialize)
   connection.onInitialized(onConnectionInitialized)
   connection.onCompletion(onConnectionCompletion)
+  connection.onDidChangeWatchedFiles(onWatchedFilesChange)
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -131,10 +134,7 @@ async function onConnectionCompletion({ position, textDocument }: CompletionPara
   }
 
   const currentFsPath = fileURLToPath(textDocument.uri)
-  const currentLocale = getLocaleFromSlug(
-    currentFsPath.replace(lspOptions.fsPaths.content, ''),
-    lspOptions.config.locales,
-  )
+  const currentLocale = getLocaleFromSlug(getContentFsPath(lspOptions, currentFsPath), lspOptions.config.locales)
 
   for (const [slug, data] of linksData) {
     if (data.fsPath === currentFsPath) continue
@@ -148,6 +148,30 @@ async function onConnectionCompletion({ position, textDocument }: CompletionPara
   }
 
   return items
+}
+
+async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
+  if (!lspOptions) return
+
+  for (const change of changes) {
+    const fsPath = fileURLToPath(change.uri)
+
+    switch (change.type) {
+      case FileChangeType.Created: {
+        const [slug, data] = await getLinkData(lspOptions, fsPath)
+        linksData.set(slug, data)
+        break
+      }
+      case FileChangeType.Deleted: {
+        for (const [slug, data] of linksData) {
+          if (data.fsPath !== fsPath) continue
+          linksData.delete(slug)
+          break
+        }
+        break
+      }
+    }
+  }
 }
 
 function makeCompletionItem(
