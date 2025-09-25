@@ -44,48 +44,19 @@ function runLsp() {
   connection.onDefinition(onConnectionDefinition)
   connection.onDocumentLinks(onConnectionDocumentLinks)
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  connection.languages.diagnostics.on(() => {
-    connection.console.log('🚨 [server.ts:53] diagnostics')
-  })
-
   documents.listen(connection)
   connection.listen()
 }
 
 function onConnectionInitialize({ initializationOptions }: InitializeParams) {
-  // const capabilities = params.capabilities
-
-  // Does the client support the `workspace/configuration` request?
-  // If not, we fall back using global settings.
-  // hasConfigurationCapability = !!(capabilities.workspace && !!capabilities.workspace.configuration)
-  // hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders)
-  // hasDiagnosticRelatedInformationCapability = !!(
-  //   capabilities.textDocument &&
-  //   capabilities.textDocument.publishDiagnostics &&
-  //   capabilities.textDocument.publishDiagnostics.relatedInformation
-  // )
-
   const result: InitializeResult = {
     capabilities: {
       completionProvider: { resolveProvider: false, triggerCharacters: ['/', '#'] },
       definitionProvider: true,
       documentLinkProvider: { resolveProvider: true },
-      // TODO(HiDeoo) is it possible to override the Markdown LSP diagnostics when a link is valid?
-      // TODO(HiDeoo) see if possible to disable diagnostics entirely
-      diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
       textDocumentSync: TextDocumentSyncKind.Incremental,
     },
   }
-
-  // if (hasWorkspaceFolderCapability) {
-  //   result.capabilities.workspace = {
-  //     workspaceFolders: {
-  //       supported: true,
-  //     },
-  //   }
-  // }
 
   lspOptions = deserializeLspOptions(initializationOptions)
 
@@ -195,31 +166,13 @@ function onConnectionDefinition(definition: DefinitionParams) {
   const linkData = linksData.get(markdownContent.url)
   if (!linkData) return null
 
-  // TODO(HiDeoo) fragments
+  const position = { line: 0, character: 0 }
 
   return [
     LocationLink.create(
       pathToFileURL(linkData.fsPath).toString(),
-      {
-        start: {
-          line: 0,
-          character: 0,
-        },
-        end: {
-          line: 0,
-          character: 0,
-        },
-      },
-      {
-        start: {
-          line: 0,
-          character: 0,
-        },
-        end: {
-          line: 0,
-          character: 0,
-        },
-      },
+      { start: position, end: position },
+      { start: position, end: position },
     ),
   ]
 }
@@ -236,8 +189,6 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
   for (const markdownLink of markdownLinks) {
     const linkData = linksData.get(markdownLink.url)
     if (!linkData) continue
-
-    // TODO(HiDeoo) fragments
 
     links.push({
       target: pathToFileURL(linkData.fsPath).toString(),
