@@ -21,12 +21,13 @@ import {
   type DocumentLink,
   type HoverParams,
   MarkupKind,
+  type Position,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { getMarkdownContentAtPosition, getMarkdownLinks, type MarkdownLink } from './libs/markdown'
+import { getStarlightLinkAtPosition, getStarlightLinks } from './libs/markdown'
 import { getContentFragments, getContentFsPath, getLinkData, getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
@@ -85,30 +86,23 @@ async function onConnectionInitialized() {
 async function onConnectionCompletion(completion: CompletionParams) {
   if (!lspOptions) return
 
-  const line = getLineAtPosition(completion)
-  if (!line) return
+  const document = getDocument(completion)
+  if (!document) return
 
-  // TODO(HiDeoo) other types of links (md, mdx, components, Markdown references, etc.)
-  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
-
-  if (markdownContent.type === 'unknown') return
-  if (markdownContent.url.startsWith('#')) return
+  const starlightLink = getStarlightLinkAtPosition(document, completion)
+  if (!starlightLink) return
 
   const items: CompletionItem[] = []
-  const context: CompletionItemContext = {
-    document: line.document,
-    lineStart: line.start,
-    markdownLink: markdownContent,
-  }
+  const range = { start: starlightLink.start, end: starlightLink.end }
 
-  if (markdownContent.type === 'fragment') {
-    const linkData = linksData.get(markdownContent.url)
+  if (starlightLink.url.includes('#')) {
+    const linkData = linksData.get(starlightLink.slug)
     if (!linkData) return
 
     const fragments = await getContentFragments(linkData.fsPath)
 
     for (const fragment of fragments) {
-      items.push(makeCompletionItem(context, `${markdownContent.url}#${fragment.slug}`, fragment.label))
+      items.push(makeCompletionItem(range, `${starlightLink.slug}#${fragment.slug}`, fragment.label))
     }
 
     return items
@@ -125,7 +119,7 @@ async function onConnectionCompletion(completion: CompletionParams) {
       if (!currentLocale && data.locale) continue
     }
 
-    items.push(makeCompletionItem(context, slug, data.title))
+    items.push(makeCompletionItem(range, slug, data.title))
   }
 
   return items
@@ -158,16 +152,13 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
 function onConnectionDefinition(definition: DefinitionParams) {
   if (!lspOptions) return
 
-  const line = getLineAtPosition(definition)
-  if (!line) return
+  const document = getDocument(definition)
+  if (!document) return
 
-  // TODO(HiDeoo) other types of links (md, mdx, components, Markdown references, etc.)
-  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
+  const starlightLink = getStarlightLinkAtPosition(document, definition)
+  if (!starlightLink) return
 
-  if (markdownContent.type === 'unknown') return
-  if (markdownContent.url.startsWith('#')) return
-
-  const linkData = linksData.get(markdownContent.url)
+  const linkData = linksData.get(starlightLink.slug)
   if (!linkData) return
 
   const position = { line: 0, character: 0 }
@@ -188,18 +179,15 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
   if (!document) return []
 
   const links: DocumentLink[] = []
-  const markdownLinks = getMarkdownLinks(document.getText())
+  const markdownLinks = getStarlightLinks(document)
 
   for (const markdownLink of markdownLinks) {
-    const linkData = linksData.get(markdownLink.url)
+    const linkData = linksData.get(markdownLink.slug)
     if (!linkData) continue
 
     links.push({
       target: pathToFileURL(linkData.fsPath).toString(),
-      range: {
-        start: document.positionAt(document.offsetAt({ line: markdownLink.line, character: markdownLink.start })),
-        end: document.positionAt(document.offsetAt({ line: markdownLink.line, character: markdownLink.end })),
-      },
+      range: { start: markdownLink.start, end: markdownLink.end },
     })
   }
 
@@ -209,15 +197,13 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
 function onConnectionHover(hover: HoverParams) {
   if (!lspOptions) return
 
-  const line = getLineAtPosition(hover)
-  if (!line) return
+  const document = getDocument(hover)
+  if (!document) return
 
-  const markdownContent = getMarkdownContentAtPosition(line.text, line.position)
+  const starlightLink = getStarlightLinkAtPosition(document, hover)
+  if (!starlightLink) return
 
-  if (markdownContent.type === 'unknown') return
-  if (markdownContent.url.startsWith('#')) return
-
-  const linkData = linksData.get(markdownContent.url)
+  const linkData = linksData.get(starlightLink.slug)
   if (!linkData) return
 
   let value = `## ${linkData.title}`
@@ -228,55 +214,26 @@ function onConnectionHover(hover: HoverParams) {
       kind: MarkupKind.Markdown,
       value,
     },
-    range: {
-      start: line.document.positionAt(line.start + markdownContent.start),
-      end: line.document.positionAt(line.start + markdownContent.end),
-    },
+    range: { start: starlightLink.start, end: starlightLink.end },
   }
 }
 
-function getLineAtPosition({ position, textDocument }: TextDocumentPositionParams) {
-  const document = documents.get(textDocument.uri)
-  if (!document) return
-
-  const text = document.getText()
-  const offset = document.offsetAt(position)
-  const lineStart = text.lastIndexOf('\n', offset - 1) + 1
-  const lineEnd = text.indexOf('\n', offset)
-  const currentLine = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd)
-
-  return {
-    document,
-    position: offset - lineStart,
-    start: lineStart,
-    text: currentLine,
-  }
+function getDocument({ textDocument }: TextDocumentPositionParams) {
+  return documents.get(textDocument.uri)
 }
 
 function makeCompletionItem(
-  { document, lineStart, markdownLink }: CompletionItemContext,
+  range: { start: Position; end: Position },
   label: string,
   details?: string,
 ): CompletionItem {
   const item: CompletionItem = {
     kind: CompletionItemKind.File,
     label,
-    textEdit: {
-      newText: label,
-      range: {
-        start: document.positionAt(lineStart + markdownLink.start),
-        end: document.positionAt(lineStart + markdownLink.end),
-      },
-    },
+    textEdit: { newText: label, range: { start: range.start, end: range.end } },
   }
 
   if (details) item.labelDetails = { description: details }
 
   return item
-}
-
-interface CompletionItemContext {
-  document: TextDocument
-  lineStart: number
-  markdownLink: MarkdownLink
 }

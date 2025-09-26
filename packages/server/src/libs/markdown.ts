@@ -2,69 +2,68 @@ import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
 import remarkMdx from 'remark-mdx'
 import { getNewSlugger } from 'starlight-links-shared/path.js'
-import { visit } from 'unist-util-visit'
+import { pointEnd, pointStart } from 'unist-util-position'
+import { CONTINUE, SKIP, visit } from 'unist-util-visit'
+import type { Position, TextDocumentPositionParams } from 'vscode-languageserver/node'
+import type { TextDocument } from 'vscode-languageserver-textdocument'
 
-const linkUrlRegex = /\[(?<text>[^\]]*)\]\((?<url>[^)]*)\)/g
+const processor = remark().use(remarkMdx).freeze()
 
-const processor = remark().use(remarkMdx)
+const linkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
 
-export function getMarkdownContentAtPosition(line: string, position: number): MarkdownContent {
-  const links = getLineMarkdownLinks(line)
-
-  for (const link of links) {
-    if (position < link.start) continue
-    if (position > link.end) continue
+export function getStarlightLinkAtPosition(document: TextDocument, { position }: TextDocumentPositionParams) {
+  for (const link of getStarlightLinks(document)) {
+    if (position.line !== link.start.line || position.line !== link.end.line) continue
+    if (position.character < link.start.character || position.character > link.end.character) continue
 
     return link
   }
 
-  return { type: 'unknown' }
+  return
 }
 
-export function getMarkdownLinks(text: string): MarkdownLink[] {
-  const links: MarkdownLink[] = []
-  const lines = text.split('\n')
+export function getStarlightLinks(document: TextDocument) {
+  const markdown = document.getText()
+  const tree = processor.parse(markdown)
+  const starlightLinks: StarlightLink[] = []
 
-  for (const [index, line] of lines.entries()) {
-    links.push(...getLineMarkdownLinks(line, index))
-  }
+  visit(tree, ['link'], (node) => {
+    if (node.type !== 'link') return CONTINUE
+    if (node.url.startsWith('#')) return SKIP
 
-  return links
-}
+    const start = pointStart(node)
+    const end = pointEnd(node)
+    if (!start || !end) return SKIP
 
-function getLineMarkdownLinks(line: string, number = 0): MarkdownLink[] {
-  const links: MarkdownLink[] = []
+    const urlPosition = getLinkUrlPosition(markdown, start, end)
+    if (!urlPosition) return SKIP
 
-  let match: RegExpExecArray | null
-  linkUrlRegex.lastIndex = 0
-
-  while ((match = linkUrlRegex.exec(line))) {
-    const start = match.index + (match[1]?.length ?? 0) + 3
-    const end = start + (match[2]?.length ?? 0)
-    const url = match[2] ?? ''
-
-    if (url.includes('#')) {
-      const [baseUrl] = url.split('#')
-
-      links.push({
-        type: 'fragment',
-        line: number,
-        start,
-        end,
-        url: baseUrl ?? '',
-      })
-    }
-
-    links.push({
-      type: 'url',
-      line: number,
-      start,
-      end,
-      url: url,
+    starlightLinks.push({
+      url: node.url,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      slug: node.url.includes('#') ? node.url.split('#')[0]! : node.url,
+      start: getPositionFromPoint(urlPosition.start),
+      end: getPositionFromPoint(urlPosition.end),
     })
-  }
 
-  return links
+    return SKIP
+  })
+
+  return starlightLinks
+}
+
+function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start: Point; end: Point } | undefined {
+  const linkStr = markdown.slice(start.offset, end.offset)
+
+  const match = linkUrlRegex.exec(linkStr)
+  const prefix = match?.groups?.['prefix']
+  const url = match?.groups?.['url']
+  if (!prefix || url === undefined) return
+
+  const urlStart = { line: start.line, column: start.column + prefix.length }
+  const urlEnd = { line: start.line, column: urlStart.column + url.length }
+
+  return { start: urlStart, end: urlEnd }
 }
 
 export function getFragments(content: string): MarkdownFragment[] {
@@ -161,26 +160,20 @@ export function getFragments(content: string): MarkdownFragment[] {
   return fragments
 }
 
-type MarkdownContent =
-  | { type: 'unknown' }
-  | {
-      type: 'url'
-      line: number
-      start: number
-      end: number
-      url: string
-    }
-  | {
-      type: 'fragment'
-      line: number
-      start: number
-      end: number
-      url: string
-    }
+function getPositionFromPoint(point: Point): Position {
+  return { line: point.line - 1, character: point.column - 1 }
+}
 
-export type MarkdownLink = Exclude<MarkdownContent, { type: 'unknown' }>
+type Point = NonNullable<ReturnType<typeof pointStart>>
 
 interface MarkdownFragment {
   label?: string
   slug: string
+}
+
+interface StarlightLink {
+  url: string
+  slug: string
+  start: Position
+  end: Position
 }

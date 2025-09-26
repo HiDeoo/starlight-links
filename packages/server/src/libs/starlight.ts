@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+// TODO(HiDeoo) refactor using unified?
 import matter from 'gray-matter'
 import pLimit from 'p-limit'
 import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
@@ -15,8 +16,6 @@ const runWithConcurrency = pLimit(10)
 export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promise<LinksData> {
   let files = await glob('**/[^_]*.{md,mdx}', { cwd: lspOptions.fsPaths.content, onlyFiles: true })
   files = files.filter((file) => stripExtension(path.basename(file)) !== '404')
-
-  // TODO(HiDeoo) of showing all links: sort results, e.g. based on the current locale, file in the same locales should be first
 
   // eslint-disable-next-line unicorn/no-array-method-this-argument
   const data = await runWithConcurrency.map(files, async (file) =>
