@@ -1,15 +1,13 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-// TODO(HiDeoo) refactor using unified?
-import matter from 'gray-matter'
 import pLimit from 'p-limit'
 import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
 import { slugifyPath, stripExtension } from 'starlight-links-shared/path.js'
 import { glob } from 'tinyglobby'
 
 import { getLocaleFromSlug } from './i18n'
-import { getFragments } from './markdown'
+import { getFragments, getStarlightFrontmatter } from './markdown'
 
 const runWithConcurrency = pLimit(10)
 
@@ -47,7 +45,7 @@ export function getContentFsPath({ fsPaths }: StarlightLinksLspOptions, fsPath: 
 }
 
 export async function getContentFragments(path: string) {
-  const content = await readContent(path)
+  const content = await fs.readFile(path, 'utf8')
   return getFragments(content)
 }
 
@@ -79,7 +77,7 @@ async function readFrontmatter(path: string) {
 
         if (delimiterCount === 2) {
           const endIndex = content.indexOf('---', content.indexOf('---') + 3)
-          return matter(content.slice(0, Math.max(0, endIndex + 3))).data as StarlightFrontmatter
+          return getStarlightFrontmatter(content.slice(0, Math.max(0, endIndex + 3)))
         }
       }
     }
@@ -88,11 +86,6 @@ async function readFrontmatter(path: string) {
   }
 
   return
-}
-
-async function readContent(path: string) {
-  const file = await fs.readFile(path, 'utf8')
-  return matter(file).content
 }
 
 type LinkDataKey = string
@@ -105,9 +98,3 @@ interface LinkDataValue {
 }
 
 export type LinksData = Map<LinkDataKey, LinkDataValue>
-
-interface StarlightFrontmatter {
-  title: string
-  description?: string
-  slug?: string
-}

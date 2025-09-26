@@ -1,3 +1,4 @@
+import matter from 'gray-matter'
 import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
 import remarkMdx from 'remark-mdx'
@@ -50,6 +51,10 @@ export function getStarlightLinks(document: TextDocument) {
   })
 
   return starlightLinks
+}
+
+export function getStarlightFrontmatter(markdown: string) {
+  return matter(markdown).data as StarlightFrontmatter
 }
 
 function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start: Point; end: Point } | undefined {
@@ -176,4 +181,10 @@ interface StarlightLink {
   slug: string
   start: Position
   end: Position
+}
+
+interface StarlightFrontmatter {
+  title: string
+  description?: string
+  slug?: string
 }
