@@ -8,6 +8,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["starlight-links-client", "starlight-links-server"],
+  "ignore": ["starlight-links-client", "starlight-links-server", "starlight-links-shared"],
   "privatePackages":  { "tag": true, "version": true }
 }
