@@ -1,3 +1,5 @@
+export const StarlightMarkdownContentGlob = '**/[^_]*.{md,mdx}'
+
 export interface StarlightFsPaths {
   config: string
   content: string

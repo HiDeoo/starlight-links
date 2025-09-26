@@ -4,6 +4,7 @@ import path from 'node:path'
 import pLimit from 'p-limit'
 import type { StarlightLinksLspOptions } from 'starlight-links-shared/lsp.js'
 import { slugifyPath, stripExtension } from 'starlight-links-shared/path.js'
+import { StarlightMarkdownContentGlob } from 'starlight-links-shared/starlight.js'
 import { glob } from 'tinyglobby'
 
 import { getLocaleFromSlug } from './i18n'
@@ -12,7 +13,7 @@ import { getFragments, getStarlightFrontmatter } from './markdown'
 const runWithConcurrency = pLimit(10)
 
 export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promise<LinksData> {
-  let files = await glob('**/[^_]*.{md,mdx}', { cwd: lspOptions.fsPaths.content, onlyFiles: true })
+  let files = await glob(StarlightMarkdownContentGlob, { cwd: lspOptions.fsPaths.content, onlyFiles: true })
   files = files.filter((file) => stripExtension(path.basename(file)) !== '404')
 
   // eslint-disable-next-line unicorn/no-array-method-this-argument

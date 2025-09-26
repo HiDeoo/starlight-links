@@ -1,6 +1,6 @@
 import { StarlightLinksConfigSection } from 'starlight-links-shared/config.js'
 import { serializeLspOptions } from 'starlight-links-shared/lsp.js'
-import type { StarlightProject } from 'starlight-links-shared/starlight.js'
+import { StarlightMarkdownContentGlob, type StarlightProject } from 'starlight-links-shared/starlight.js'
 import {
   Disposable,
   type ExtensionContext,
@@ -72,8 +72,7 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
       }
 
       const starlightFsPaths = getStarlightFsPaths(starlightConfigFsPath, starlightProject)
-      // TODO(HiDeoo) mdx
-      const contentPattern = new RelativePattern(starlightFsPaths.content, '**/*.md')
+      const contentPattern = new RelativePattern(starlightFsPaths.content, StarlightMarkdownContentGlob)
 
       const serverModule = Uri.joinPath(context.extensionUri, 'dist', 'server.js').fsPath
 
@@ -85,8 +84,10 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
           debug: { module: serverModule, transport: TransportKind.ipc },
         },
         {
-          // TODO(HiDeoo) mdx
-          documentSelector: [{ scheme: 'file', language: 'markdown' }],
+          documentSelector: [
+            { scheme: 'file', language: 'markdown' },
+            { scheme: 'file', language: 'mdx' },
+          ],
           initializationOptions: serializeLspOptions(starlightFsPaths, starlightProject),
           synchronize: {
             fileEvents: workspace.createFileSystemWatcher(contentPattern, false, true, false),

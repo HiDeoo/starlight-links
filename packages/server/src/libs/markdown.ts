@@ -58,8 +58,6 @@ export function getStarlightFrontmatter(markdown: string) {
   return matter(markdown).data as StarlightFrontmatter
 }
 
-// TODO(HiDeoo) markdown references
-
 function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start: Point; end: Point } | undefined {
   const linkStr = markdown.slice(start.offset, end.offset)
 
