@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "gray-matter": "^4.0.3",
+    "mdast-util-mdx-jsx": "^3.2.0",
     "mdast-util-to-string": "^4.0.0",
     "p-limit": "^7.1.1",
     "remark": "^15.0.1",

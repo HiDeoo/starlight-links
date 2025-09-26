@@ -1,4 +1,5 @@
 import matter from 'gray-matter'
+import type { MdxJsxAttribute, MdxJsxExpressionAttribute } from 'mdast-util-mdx-jsx'
 import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
 import remarkMdx from 'remark-mdx'
@@ -57,6 +58,8 @@ export function getStarlightFrontmatter(markdown: string) {
   return matter(markdown).data as StarlightFrontmatter
 }
 
+// TODO(HiDeoo) markdown references
+
 function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start: Point; end: Point } | undefined {
   const linkStr = markdown.slice(start.offset, end.offset)
 
@@ -72,9 +75,6 @@ function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start
 }
 
 export function getFragments(content: string): MarkdownFragment[] {
-  // TODO(HiDeoo) mdx
-  // TODO(HiDeoo) html
-
   const tree = processor.parse(content)
   const slugger = getNewSlugger()
 
@@ -90,75 +90,30 @@ export function getFragments(content: string): MarkdownFragment[] {
 
         // Remove the last trailing hyphen from the slug like Astro does if it exists.
         // https://github.com/withastro/astro/blob/74ee2e45ecc9edbe285eadee6d0b94fc47d0d125/packages/integrations/markdoc/src/heading-ids.ts#L21
-        fragments.push({
-          label: content,
-          slug: slugger.slug(content).replace(/-$/, ''),
-        })
+        fragments.push({ label: content, slug: slugger.slug(content).replace(/-$/, '') })
 
         break
       }
-      // case 'mdxJsxFlowElement': {
-      //   for (const attribute of node.attributes) {
-      //     if (isMdxIdAttribute(attribute)) {
-      //       fileHeadings.push(attribute.value)
-      //     }
-      //   }
+      case 'mdxJsxFlowElement': {
+        for (const attribute of node.attributes) {
+          if (isMdxIdAttribute(attribute)) {
+            fragments.push({ slug: attribute.value })
+            break
+          }
+        }
 
-      //   if (!node.name) {
-      //     break
-      //   }
+        break
+      }
+      case 'mdxJsxTextElement': {
+        for (const attribute of node.attributes) {
+          if (isMdxIdAttribute(attribute)) {
+            fragments.push({ slug: attribute.value })
+            break
+          }
+        }
 
-      //   const componentProp = linkComponents[node.name]
-
-      //   if (node.name !== 'a' && !componentProp) {
-      //     break
-      //   }
-
-      //   for (const attribute of node.attributes) {
-      //     if (
-      //       attribute.type !== 'mdxJsxAttribute' ||
-      //       attribute.name !== (componentProp ?? 'href') ||
-      //       typeof attribute.value !== 'string'
-      //     ) {
-      //       continue
-      //     }
-
-      //     const link = getLinkToValidate(attribute.value, config)
-      //     if (link) fileLinks.push(link)
-      //   }
-
-      //   break
-      // }
-      // case 'mdxJsxTextElement': {
-      //   for (const attribute of node.attributes) {
-      //     if (isMdxIdAttribute(attribute)) {
-      //       fileHeadings.push(attribute.value)
-      //     }
-      //   }
-
-      //   break
-      // }
-      // case 'html': {
-      //   const htmlTree = fromHtml(node.value, { fragment: true })
-
-      //   visit(htmlTree, (htmlNode: Nodes) => {
-      //     if (hasProperty(htmlNode, 'id') && typeof htmlNode.properties.id === 'string') {
-      //       fileHeadings.push(htmlNode.properties.id)
-      //     }
-
-      //     if (
-      //       htmlNode.type === 'element' &&
-      //       htmlNode.tagName === 'a' &&
-      //       hasProperty(htmlNode, 'href') &&
-      //       typeof htmlNode.properties.href === 'string'
-      //     ) {
-      //       const link = getLinkToValidate(htmlNode.properties.href, config)
-      //       if (link) fileLinks.push(link)
-      //     }
-      //   })
-
-      //   break
-      // }
+        break
+      }
     }
   })
 
@@ -169,7 +124,22 @@ function getPositionFromPoint(point: Point): Position {
   return { line: point.line - 1, character: point.column - 1 }
 }
 
+function isMdxIdAttribute(attribute: MdxJsxAttribute | MdxJsxExpressionAttribute): attribute is MdxIdAttribute {
+  return (
+    attribute.type === 'mdxJsxAttribute' &&
+    attribute.name === 'id' &&
+    typeof attribute.value === 'string' &&
+    attribute.value.length > 0
+  )
+}
+
 type Point = NonNullable<ReturnType<typeof pointStart>>
+
+interface MdxIdAttribute {
+  name: 'id'
+  type: 'mdxJsxAttribute'
+  value: string
+}
 
 interface MarkdownFragment {
   label?: string
