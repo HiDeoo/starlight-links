@@ -2,6 +2,7 @@ import matter from 'gray-matter'
 import type { MdxJsxAttribute, MdxJsxExpressionAttribute } from 'mdast-util-mdx-jsx'
 import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
+import remarkFrontmatter from 'remark-frontmatter'
 import remarkMdx from 'remark-mdx'
 import { getNewSlugger } from 'starlight-links-shared/path.js'
 import { pointEnd, pointStart } from 'unist-util-position'
@@ -9,7 +10,7 @@ import { CONTINUE, SKIP, visit } from 'unist-util-visit'
 import type { Position, TextDocumentPositionParams } from 'vscode-languageserver/node'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
 
-const processor = remark().use(remarkMdx).freeze()
+const processor = remark().use(remarkMdx).use(remarkFrontmatter).freeze()
 
 const linkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
 
