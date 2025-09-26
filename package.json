@@ -51,14 +51,14 @@
             ".",
             "./docs"
           ],
-          "description": "The directories to look for Starlight configuration files in (relative to the workspace root).",
+          "description": "The directories to look for Starlight configuration files (relative to the workspace root).",
           "type": "array",
           "order": 0
         },
         "starlightLinks.useConsistentLocale": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "// TODO(HiDeoo) ",
+          "markdownDescription": "Limit suggested links to the current document's locale in multilingual Starlight projects.",
           "order": 1
         }
       }
