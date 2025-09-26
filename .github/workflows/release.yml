@@ -33,6 +33,7 @@ jobs:
         run: pnpm install
 
       - name: Create Release Pull Request or Publish
+        id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm run version
@@ -42,6 +43,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish
-        if: steps.changesets.outputs.hasChangesets == 'false'
-        run: echo "// TODO(HiDeoo)"
+      - name: Publish to Visual Studio Marketplace
+        if: steps.changesets.outputs.published == 'true'
+        run: pnpx @vscode/vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_TOKEN }}
+
+      - name: Publish to Open VSX Registry
+        if: steps.changesets.outputs.published == 'true'
+        run: pnpx ovsx publish
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_TOKEN }}
