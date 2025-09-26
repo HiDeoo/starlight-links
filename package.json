@@ -10,7 +10,6 @@
     "build": "tsdown",
     "vscode:package": "pnpx @vscode/vsce package",
     "vscode:prepublish": "pnpm build",
-    "test": "echo \"Error: no test implemented // TODO(HiDeoo) .\" && exit 1",
     "lint": "eslint . --cache --max-warnings=0 && tsc --noEmit",
     "format": "prettier -w --cache --ignore-unknown .",
     "version": "pnpm changeset version && pnpm i --no-frozen-lockfile"
