@@ -27,30 +27,35 @@ export function getStarlightLinkAtPosition(document: TextDocument, { position }:
 
 export function getStarlightLinks(document: TextDocument) {
   const markdown = document.getText()
-  const tree = processor.parse(markdown)
   const starlightLinks: StarlightLink[] = []
 
-  visit(tree, ['link'], (node) => {
-    if (node.type !== 'link') return CONTINUE
-    if (node.url.startsWith('#')) return SKIP
+  try {
+    const tree = processor.parse(markdown)
 
-    const start = pointStart(node)
-    const end = pointEnd(node)
-    if (!start || !end) return SKIP
+    visit(tree, ['link'], (node) => {
+      if (node.type !== 'link') return CONTINUE
+      if (node.url.startsWith('#')) return SKIP
 
-    const urlPosition = getLinkUrlPosition(markdown, start, end)
-    if (!urlPosition) return SKIP
+      const start = pointStart(node)
+      const end = pointEnd(node)
+      if (!start || !end) return SKIP
 
-    starlightLinks.push({
-      url: node.url,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      slug: node.url.includes('#') ? node.url.split('#')[0]! : node.url,
-      start: getPositionFromPoint(urlPosition.start),
-      end: getPositionFromPoint(urlPosition.end),
+      const urlPosition = getLinkUrlPosition(markdown, start, end)
+      if (!urlPosition) return SKIP
+
+      starlightLinks.push({
+        url: node.url,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        slug: node.url.includes('#') ? node.url.split('#')[0]! : node.url,
+        start: getPositionFromPoint(urlPosition.start),
+        end: getPositionFromPoint(urlPosition.end),
+      })
+
+      return SKIP
     })
-
-    return SKIP
-  })
+  } catch {
+    // Ignore parsing errors.
+  }
 
   return starlightLinks
 }
