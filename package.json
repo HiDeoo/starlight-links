@@ -1,0 +1,106 @@
+{
+  "name": "starlight-links",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "IntelliSense for Starlight Markdown and MDX content links.",
+  "author": "HiDeoo <github@hideoo.dev> (https://hideoo.dev)",
+  "type": "module",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "tsdown",
+    "vscode:package": "pnpx @vscode/vsce package",
+    "vscode:prepublish": "pnpm build",
+    "lint": "eslint . --cache --max-warnings=0 && tsc --noEmit",
+    "format": "prettier -w --cache --ignore-unknown .",
+    "version": "pnpm changeset version && pnpm i --no-frozen-lockfile"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.7",
+    "@hideoo/eslint-config": "^4.0.0",
+    "@hideoo/prettier-config": "^2.0.0",
+    "@hideoo/tsconfig": "^2.0.1",
+    "eslint": "^9.35.0",
+    "prettier": "^3.6.2",
+    "tsdown": "^0.15.4",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "packageManager": "pnpm@10.17.0",
+  "private": true,
+  "keywords": [
+    "starlight",
+    "documentation",
+    "markdown",
+    "mdx",
+    "links",
+    "intellisense",
+    "completion"
+  ],
+  "homepage": "https://github.com/HiDeoo/starlight-links",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HiDeoo/starlight-links.git"
+  },
+  "bugs": "https://github.com/HiDeoo/starlight-links/issues",
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:mdx"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Starlight Links",
+      "properties": {
+        "starlightLinks.configDirectories": {
+          "default": [
+            ".",
+            "./docs"
+          ],
+          "description": "The directories to look for Starlight configuration files (relative to the workspace root).",
+          "type": "array",
+          "order": 0
+        },
+        "starlightLinks.useConsistentLocale": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Limit suggested links to the current document's locale in multilingual Starlight projects.",
+          "order": 1
+        }
+      }
+    }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "displayName": "Starlight Links",
+  "publisher": "hideoo",
+  "categories": [
+    "Other"
+  ],
+  "preview": true,
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#7a8194",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://github.com/HiDeoo/starlight-links/actions/workflows/integration.yml/badge.svg",
+      "href": "https://github.com/HiDeoo/starlight-links/actions/workflows/integration.yml",
+      "description": "Integration Status"
+    },
+    {
+      "url": "https://badgen.net/github/license/hideoo/starlight-links",
+      "href": "https://github.com/HiDeoo/starlight-links/blob/main/LICENSE",
+      "description": "License"
+    }
+  ],
+  "prettier": "@hideoo/prettier-config"
+}

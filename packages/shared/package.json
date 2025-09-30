@@ -1,0 +1,12 @@
+{
+  "name": "starlight-links-shared",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "github-slugger": "^2.0.0"
+  },
+  "private": true
+}

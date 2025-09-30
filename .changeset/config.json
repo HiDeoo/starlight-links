@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.4/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "HiDeoo/starlight-links" }
+  ],
+  "commit": false,
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["starlight-links-client", "starlight-links-server", "starlight-links-shared"],
+  "privatePackages":  { "tag": true, "version": true }
+}
