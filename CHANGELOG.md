@@ -1,5 +1,11 @@
 # starlight-links
 
+## 0.1.1
+
+### Patch Changes
+
+- [#3](https://github.com/HiDeoo/starlight-links/pull/3) [`5ee7ac9`](https://github.com/HiDeoo/starlight-links/commit/5ee7ac91da14760ab4a7c936aebd900bdba5751d) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Prevents notifications when parsing malformed Markdown files.
+
 ## 0.1.0
 
 ### Minor Changes
