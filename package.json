@@ -2,7 +2,7 @@
   "name": "starlight-links",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "// TODO(HiDeoo)",
+  "description": "IntelliSense for Starlight Markdown and MDX content links.",
   "author": "HiDeoo <github@hideoo.dev> (https://hideoo.dev)",
   "type": "module",
   "main": "./dist/extension.js",
@@ -31,7 +31,13 @@
   "packageManager": "pnpm@10.17.0",
   "private": true,
   "keywords": [
-    "// TODO(HiDeoo)"
+    "starlight",
+    "documentation",
+    "markdown",
+    "mdx",
+    "links",
+    "intellisense",
+    "completion"
   ],
   "homepage": "https://github.com/HiDeoo/starlight-links",
   "repository": {
@@ -40,7 +46,8 @@
   },
   "bugs": "https://github.com/HiDeoo/starlight-links/issues",
   "activationEvents": [
-    "onLanguage:plaintext"
+    "onLanguage:markdown",
+    "onLanguage:mdx"
   ],
   "contributes": {
     "configuration": {
@@ -71,6 +78,29 @@
   },
   "extensionKind": [
     "workspace"
+  ],
+  "displayName": "Starlight Links",
+  "publisher": "hideoo",
+  "categories": [
+    "Other"
+  ],
+  "preview": true,
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#7a8194",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://github.com/HiDeoo/starlight-links/actions/workflows/integration.yml/badge.svg",
+      "href": "https://github.com/HiDeoo/starlight-links/actions/workflows/integration.yml",
+      "description": "Integration Status"
+    },
+    {
+      "url": "https://badgen.net/github/license/hideoo/starlight-links",
+      "href": "https://github.com/HiDeoo/starlight-links/blob/main/LICENSE",
+      "description": "License"
+    }
   ],
   "prettier": "@hideoo/prettier-config"
 }
