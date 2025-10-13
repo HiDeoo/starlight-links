@@ -6,6 +6,7 @@ export interface StarlightFsPaths {
 }
 
 export interface StarlightConfig {
+  defaultLocale?: string
   isMultilingual: boolean
   locales?: Record<string, string>
 }
