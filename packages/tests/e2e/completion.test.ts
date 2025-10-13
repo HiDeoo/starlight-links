@@ -22,8 +22,14 @@ const definitions: TestDefinition[] = [
     lineAfterFragmentCompletion: '[markdown-link](/achivi-amans/#magnum-eodem-nec)',
   },
   {
+    name: 'markdown reference link',
+    position: [9, 16],
+    lineAfterLinkCompletion: '[definition]: /achivi-amans/',
+    lineAfterFragmentCompletion: '[definition]: /achivi-amans/#magnum-eodem-nec',
+  },
+  {
     name: 'html link',
-    position: [7, 11],
+    position: [11, 11],
     lineAfterLinkCompletion: '<a href="/achivi-amans/">html-link</a>',
     lineAfterFragmentCompletion: '<a href="/achivi-amans/#magnum-eodem-nec">html-link</a>',
   },

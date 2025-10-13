@@ -13,6 +13,7 @@ import type { TextDocument } from 'vscode-languageserver-textdocument'
 const processor = remark().use(remarkMdx).use(remarkFrontmatter).freeze()
 
 const markdownLinkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
+const markdownDefinitionUrlRegex = /(?<prefix>\[(?:[^\]]*)\]: <?)(?<url>[^>\s]*)/
 const htmlAttributeValueRegex =
   /^(?<prefix>[^\s=>]+=)(?:(?<quotes>['"])(?<quotedValue>[^'"]*?)\2|(?<unquotedValue>[^\s'">]*))$/
 
@@ -34,10 +35,20 @@ export function getStarlightLinks(document: TextDocument) {
   try {
     const tree = processor.parse(markdown)
 
-    visit(tree, ['link', 'mdxJsxTextElement'], (node) => {
+    visit(tree, ['definition', 'link', 'mdxJsxTextElement'], (node) => {
       // https://github.com/syntax-tree/mdast#nodes
       // https://github.com/syntax-tree/mdast-util-mdx-jsx#nodes
       switch (node.type) {
+        case 'definition': {
+          if (node.url.startsWith('#')) return SKIP
+
+          const urlPoints = getMarkdownDefinitionUrlPosition(markdown, node)
+          if (!urlPoints) return SKIP
+
+          starlightLinks.push(makeStarlightLink(node.url, urlPoints))
+
+          return SKIP
+        }
         case 'link': {
           if (node.url.startsWith('#')) return SKIP
 
@@ -96,6 +107,24 @@ function getMarkdownLinkUrlPosition(markdown: string, node: Node): Points | unde
   const linkStr = markdown.slice(start.offset, end.offset)
 
   const match = markdownLinkUrlRegex.exec(linkStr)
+  const prefix = match?.groups?.['prefix']
+  const url = match?.groups?.['url']
+  if (!prefix || url === undefined) return
+
+  const urlStart = { line: start.line, column: start.column + prefix.length }
+  const urlEnd = { line: start.line, column: urlStart.column + url.length }
+
+  return { start: urlStart, end: urlEnd }
+}
+
+function getMarkdownDefinitionUrlPosition(markdown: string, node: Node): Points | undefined {
+  const points = getNodePoints(node)
+  if (!points) return
+  const { start, end } = points
+
+  const definitionStr = markdown.slice(start.offset, end.offset)
+
+  const match = markdownDefinitionUrlRegex.exec(definitionStr)
   const prefix = match?.groups?.['prefix']
   const url = match?.groups?.['url']
   if (!prefix || url === undefined) return
