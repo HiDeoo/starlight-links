@@ -8,6 +8,7 @@ export function run(): Promise<void> {
     const mocha = new Mocha({
       color: true,
       ui: 'tdd',
+      timeout: 10_000,
     })
 
     const files = globSync('**/**.test.js', { cwd: __dirname })

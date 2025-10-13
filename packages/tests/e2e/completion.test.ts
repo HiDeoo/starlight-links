@@ -7,6 +7,7 @@ import {
   getLineText,
   moveCursor,
   revertFile,
+  updateConfig,
   write,
 } from './utils'
 
@@ -91,6 +92,34 @@ for (const definition of definitions) {
     })
   })
 }
+
+test('provides custom link completions', async () => {
+  const customComponentsSection = 'starlightLinks.customComponents'
+  await updateConfig(customComponentsSection, undefined)
+
+  moveCursor(21, 19)
+
+  let completions = await getCompletionItems()
+
+  assertLinkCompletionItems(completions, [])
+
+  await updateConfig(customComponentsSection, [['CustomLink', 'url']])
+
+  completions = await getCompletionItems()
+
+  assertLinkCompletionItems(completions, [
+    { link: '/achivi-amans/', description: 'Achivi amans' },
+    { link: '/terrae/pertimuit-munere/', description: 'Pertimuit munere' },
+  ])
+
+  await applyCompletionItem(completions[0])
+
+  const text = getLineText(21)
+
+  assert.equal(text, '<CustomLink url="/achivi-amans/" />')
+
+  await updateConfig(customComponentsSection, undefined)
+})
 
 interface TestDefinition {
   name: string

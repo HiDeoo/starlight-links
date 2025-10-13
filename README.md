@@ -70,6 +70,21 @@ You can disable this behavior and always show all internal links regardless of t
 }
 ```
 
+### `starlightLinks.customComponents`
+
+By default, the Starlight Links extension provides IntelliSense support for links and Starlight [`<LinkCard>`](https://starlight.astro.build/components/link-cards/) and [`<LinkButton>`](https://starlight.astro.build/components/link-buttons/) components.
+
+You can extend this support for additional custom components in your Visual Studio Code [User](https://code.visualstudio.com/docs/getstarted/settings#_settings-editor) or [Workspace](https://code.visualstudio.com/docs/getstarted/settings#_workspace-settings) settings by providing the component names and associated prop names to be treated as links.
+
+```jsonc
+{
+  "starlightLinks.customComponents": [
+    // Add support for a `<CustomLink url="…">` component.
+    ["CustomLink", "url"],
+  ],
+}
+```
+
 ## More extensions
 
 - [Toggler](https://marketplace.visualstudio.com/items?itemName=hideoo.toggler) - Toggle words and symbols.

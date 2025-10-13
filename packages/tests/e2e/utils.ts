@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict'
+import { setTimeout } from 'node:timers/promises'
 
-import { type CompletionItem, commands, CompletionItemKind, Position, Selection, window } from 'vscode'
+import {
+  type CompletionItem,
+  commands,
+  CompletionItemKind,
+  ConfigurationTarget,
+  Position,
+  Selection,
+  window,
+  workspace,
+} from 'vscode'
 
 export function revertFile() {
   return commands.executeCommand('workbench.action.files.revert')
@@ -21,6 +31,13 @@ export function moveCursor(line: number, column: number) {
 export function getLineText(line: number) {
   const editor = getActiveEditor()
   return editor.document.lineAt(line - 1).text
+}
+
+// To remove a configuration value, use `undefined`.
+export async function updateConfig(section: string, value: unknown) {
+  const config = workspace.getConfiguration()
+  await config.update(section, value, ConfigurationTarget.Global)
+  await setTimeout(1000)
 }
 
 export async function getCompletionItems() {

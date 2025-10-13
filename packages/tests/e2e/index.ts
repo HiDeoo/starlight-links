@@ -23,7 +23,7 @@ async function run() {
     // Install the MDX extension.
     const [cliPath, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
     if (!cliPath) throw new Error('Failed to resolve the VS Code CLI path.')
-    spawnSync(cliPath, [...args, '--install-extension', 'unifiedjs.vscode-mdx'], {
+    spawnSync(cliPath, [...args, '--force', '--install-extension', 'unifiedjs.vscode-mdx'], {
       encoding: 'utf8',
       stdio: 'inherit',
     })

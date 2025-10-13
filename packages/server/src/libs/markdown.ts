@@ -4,6 +4,7 @@ import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkMdx from 'remark-mdx'
+import type { StarlightLinksConfig } from 'starlight-links-shared/config.js'
 import { getNewSlugger } from 'starlight-links-shared/path.js'
 import { pointEnd, pointStart } from 'unist-util-position'
 import { CONTINUE, SKIP, visit } from 'unist-util-visit'
@@ -12,13 +13,27 @@ import type { TextDocument } from 'vscode-languageserver-textdocument'
 
 const processor = remark().use(remarkMdx).use(remarkFrontmatter).freeze()
 
+const starlightComponents: StarlightLinksConfig['customComponents'] = [
+  ['a', 'href'],
+  ['LinkCard', 'href'],
+  ['LinkButton', 'href'],
+]
+
 const markdownLinkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
 const markdownDefinitionUrlRegex = /(?<prefix>\[(?:[^\]]*)\]: <?)(?<url>[^>\s]*)/
 const htmlAttributeValueRegex =
   /^(?<prefix>[^\s=>]+=)(?:(?<quotes>['"])(?<quotedValue>[^'"]*?)\2|(?<unquotedValue>[^\s'">]*))$/
 
-export function getStarlightLinkAtPosition(document: TextDocument, { position }: TextDocumentPositionParams) {
-  for (const link of getStarlightLinks(document)) {
+export function getLinkComponentMap(extConfig: StarlightLinksConfig): LinkComponentMap {
+  return Object.fromEntries([...starlightComponents, ...extConfig.customComponents])
+}
+
+export function getStarlightLinkAtPosition(
+  document: TextDocument,
+  linkComponentMap: LinkComponentMap,
+  { position }: TextDocumentPositionParams,
+) {
+  for (const link of getStarlightLinks(document, linkComponentMap)) {
     if (position.line !== link.start.line || position.line !== link.end.line) continue
     if (position.character < link.start.character || position.character > link.end.character) continue
 
@@ -28,7 +43,7 @@ export function getStarlightLinkAtPosition(document: TextDocument, { position }:
   return
 }
 
-export function getStarlightLinks(document: TextDocument) {
+export function getStarlightLinks(document: TextDocument, linkComponentMap: LinkComponentMap) {
   const markdown = document.getText()
   const starlightLinks: StarlightLink[] = []
 
@@ -61,9 +76,12 @@ export function getStarlightLinks(document: TextDocument) {
         }
         case 'mdxJsxFlowElement':
         case 'mdxJsxTextElement': {
-          if (node.name !== 'a' && node.name !== 'LinkCard' && node.name !== 'LinkButton') return CONTINUE
+          if (!node.name) return CONTINUE
 
-          const href = node.attributes.find((attr) => attr.type === 'mdxJsxAttribute' && attr.name === 'href')
+          const prop = linkComponentMap[node.name]
+          if (!prop) return CONTINUE
+
+          const href = node.attributes.find((attr) => attr.type === 'mdxJsxAttribute' && attr.name === prop)
           if (!href || typeof href.value !== 'string') return SKIP
           if (href.value.startsWith('#')) return SKIP
 
@@ -253,3 +271,6 @@ interface StarlightFrontmatter {
   description?: string
   slug?: string
 }
+
+// A record of component names mapped to their URL attribute names.
+export type LinkComponentMap = Record<string, string>
