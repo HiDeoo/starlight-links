@@ -1,0 +1,129 @@
+import assert from 'node:assert/strict'
+
+import {
+  applyCompletionItem,
+  assertLinkCompletionItems,
+  getCompletionItems,
+  getLineText,
+  moveCursor,
+  revertFile,
+  updateConfig,
+  write,
+} from './utils'
+
+teardown(async () => {
+  await revertFile()
+})
+
+const definitions: TestDefinition[] = [
+  {
+    name: 'markdown link',
+    position: [5, 18],
+    lineAfterLinkCompletion: '[markdown-link](/achivi-amans/)',
+    lineAfterFragmentCompletion: '[markdown-link](/achivi-amans/#magnum-eodem-nec)',
+  },
+  {
+    name: 'markdown reference link',
+    position: [9, 16],
+    lineAfterLinkCompletion: '[definition]: /achivi-amans/',
+    lineAfterFragmentCompletion: '[definition]: /achivi-amans/#magnum-eodem-nec',
+  },
+  {
+    name: 'html link',
+    position: [11, 11],
+    lineAfterLinkCompletion: '<a href="/achivi-amans/">html-link</a>',
+    lineAfterFragmentCompletion: '<a href="/achivi-amans/#magnum-eodem-nec">html-link</a>',
+  },
+  {
+    name: 'linkcard link',
+    position: [16, 41],
+    lineAfterLinkCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/" />',
+    lineAfterFragmentCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/#magnum-eodem-nec" />',
+  },
+  {
+    name: 'linkbutton link',
+    position: [19, 20],
+    lineAfterLinkCompletion: '<LinkButton href="/achivi-amans/">linkbutton-link</LinkButton>',
+    lineAfterFragmentCompletion: '<LinkButton href="/achivi-amans/#magnum-eodem-nec">linkbutton-link</LinkButton>',
+  },
+] as const
+
+for (const definition of definitions) {
+  suite(definition.name, () => {
+    test(`provides link completions (${definition.name})`, async () => {
+      moveCursor(definition.position[0], definition.position[1])
+
+      const completions = await getCompletionItems()
+
+      assertLinkCompletionItems(completions, [
+        { link: '/achivi-amans/', description: 'Achivi amans' },
+        { link: '/terrae/pertimuit-munere/', description: 'Pertimuit munere' },
+      ])
+
+      await applyCompletionItem(completions[0])
+
+      const text = getLineText(definition.position[0])
+
+      assert.equal(text, definition.lineAfterLinkCompletion)
+    })
+
+    test('provides fragment completions', async () => {
+      moveCursor(definition.position[0], definition.position[1])
+
+      let completions = await getCompletionItems()
+      await applyCompletionItem(completions[0])
+
+      await write('#')
+
+      completions = await getCompletionItems()
+
+      assertLinkCompletionItems(completions, [
+        { link: '/achivi-amans/#_top' },
+        { link: '/achivi-amans/#magnum-eodem-nec', description: 'Magnum eodem nec' },
+        { link: '/achivi-amans/#nostris-sollerti-dedit', description: 'Nostris sollerti dedit' },
+        { link: '/achivi-amans/#traharis-miserae', description: 'Traharis miserae' },
+      ])
+
+      await applyCompletionItem(completions[1])
+
+      const text = getLineText(definition.position[0])
+
+      assert.equal(text, definition.lineAfterFragmentCompletion)
+    })
+  })
+}
+
+test('provides custom link completions', async () => {
+  const customComponentsSection = 'starlightLinks.customComponents'
+  await updateConfig(customComponentsSection, undefined)
+
+  moveCursor(21, 19)
+
+  let completions = await getCompletionItems()
+
+  assertLinkCompletionItems(completions, [])
+
+  await updateConfig(customComponentsSection, [['CustomLink', 'url']])
+
+  completions = await getCompletionItems()
+
+  assertLinkCompletionItems(completions, [
+    { link: '/achivi-amans/', description: 'Achivi amans' },
+    { link: '/terrae/pertimuit-munere/', description: 'Pertimuit munere' },
+  ])
+
+  await applyCompletionItem(completions[0])
+
+  const text = getLineText(21)
+
+  assert.equal(text, '<CustomLink url="/achivi-amans/" />')
+
+  await updateConfig(customComponentsSection, undefined)
+})
+
+interface TestDefinition {
+  name: string
+  position: [line: number, column: number]
+  lineAfterLinkCompletion: string
+  lineAfterFragmentCompletion: string
+}

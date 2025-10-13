@@ -27,13 +27,19 @@ import { TextDocument } from 'vscode-languageserver-textdocument'
 
 import { getConfig } from './libs/config'
 import { getLocaleFromSlug } from './libs/i18n'
-import { getStarlightLinkAtPosition, getStarlightLinks } from './libs/markdown'
+import {
+  getLinkComponentMap,
+  getStarlightLinkAtPosition,
+  getStarlightLinks,
+  type LinkComponentMap,
+} from './libs/markdown'
 import { getContentFragments, getContentFsPath, getLinkData, getLinksData, type LinksData } from './libs/starlight'
 
 const connection = createConnection(ProposedFeatures.all)
 const documents = new TextDocuments(TextDocument)
 
 let extConfig = StarlightLinksDefaultConfig
+let linkComponentMap: LinkComponentMap = {}
 let lspOptions: StarlightLinksLspOptions | undefined
 let linksData: LinksData = new Map()
 
@@ -72,6 +78,7 @@ async function onConnectionInitialized() {
   if (!lspOptions) return
 
   extConfig = await getConfig(connection)
+  linkComponentMap = getLinkComponentMap(extConfig)
 
   getLinksData(lspOptions)
     .then((result) => {
@@ -89,7 +96,7 @@ async function onConnectionCompletion(completion: CompletionParams) {
   const document = getDocument(completion)
   if (!document) return
 
-  const starlightLink = getStarlightLinkAtPosition(document, completion)
+  const starlightLink = getStarlightLinkAtPosition(document, linkComponentMap, completion)
   if (!starlightLink) return
 
   const items: CompletionItem[] = []
@@ -155,7 +162,7 @@ function onConnectionDefinition(definition: DefinitionParams) {
   const document = getDocument(definition)
   if (!document) return
 
-  const starlightLink = getStarlightLinkAtPosition(document, definition)
+  const starlightLink = getStarlightLinkAtPosition(document, linkComponentMap, definition)
   if (!starlightLink) return
 
   const linkData = linksData.get(starlightLink.slug)
@@ -179,7 +186,7 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
   if (!document) return []
 
   const links: DocumentLink[] = []
-  const markdownLinks = getStarlightLinks(document)
+  const markdownLinks = getStarlightLinks(document, linkComponentMap)
 
   for (const markdownLink of markdownLinks) {
     const linkData = linksData.get(markdownLink.slug)
@@ -200,7 +207,7 @@ function onConnectionHover(hover: HoverParams) {
   const document = getDocument(hover)
   if (!document) return
 
-  const starlightLink = getStarlightLinkAtPosition(document, hover)
+  const starlightLink = getStarlightLinkAtPosition(document, linkComponentMap, hover)
   if (!starlightLink) return
 
   const linkData = linksData.get(starlightLink.slug)

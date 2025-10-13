@@ -4,6 +4,7 @@ import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkMdx from 'remark-mdx'
+import type { StarlightLinksConfig } from 'starlight-links-shared/config.js'
 import { getNewSlugger } from 'starlight-links-shared/path.js'
 import { pointEnd, pointStart } from 'unist-util-position'
 import { CONTINUE, SKIP, visit } from 'unist-util-visit'
@@ -12,10 +13,27 @@ import type { TextDocument } from 'vscode-languageserver-textdocument'
 
 const processor = remark().use(remarkMdx).use(remarkFrontmatter).freeze()
 
-const linkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
+const starlightComponents: StarlightLinksConfig['customComponents'] = [
+  ['a', 'href'],
+  ['LinkCard', 'href'],
+  ['LinkButton', 'href'],
+]
 
-export function getStarlightLinkAtPosition(document: TextDocument, { position }: TextDocumentPositionParams) {
-  for (const link of getStarlightLinks(document)) {
+const markdownLinkUrlRegex = /(?<prefix>\[(?:[^\]]*)\]\(\s*<?)(?<url>[^>\s]*)>?\s*\)/
+const markdownDefinitionUrlRegex = /(?<prefix>\[(?:[^\]]*)\]: <?)(?<url>[^>\s]*)/
+const htmlAttributeValueRegex =
+  /^(?<prefix>[^\s=>]+=)(?:(?<quotes>['"])(?<quotedValue>[^'"]*?)\2|(?<unquotedValue>[^\s'">]*))$/
+
+export function getLinkComponentMap(extConfig: StarlightLinksConfig): LinkComponentMap {
+  return Object.fromEntries([...starlightComponents, ...extConfig.customComponents])
+}
+
+export function getStarlightLinkAtPosition(
+  document: TextDocument,
+  linkComponentMap: LinkComponentMap,
+  { position }: TextDocumentPositionParams,
+) {
+  for (const link of getStarlightLinks(document, linkComponentMap)) {
     if (position.line !== link.start.line || position.line !== link.end.line) continue
     if (position.character < link.start.character || position.character > link.end.character) continue
 
@@ -25,33 +43,59 @@ export function getStarlightLinkAtPosition(document: TextDocument, { position }:
   return
 }
 
-export function getStarlightLinks(document: TextDocument) {
+export function getStarlightLinks(document: TextDocument, linkComponentMap: LinkComponentMap) {
   const markdown = document.getText()
   const starlightLinks: StarlightLink[] = []
 
   try {
     const tree = processor.parse(markdown)
 
-    visit(tree, ['link'], (node) => {
-      if (node.type !== 'link') return CONTINUE
-      if (node.url.startsWith('#')) return SKIP
+    visit(tree, ['definition', 'link', 'mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
+      // https://github.com/syntax-tree/mdast#nodes
+      // https://github.com/syntax-tree/mdast-util-mdx-jsx#nodes
+      switch (node.type) {
+        case 'definition': {
+          if (node.url.startsWith('#')) return SKIP
 
-      const start = pointStart(node)
-      const end = pointEnd(node)
-      if (!start || !end) return SKIP
+          const urlPoints = getMarkdownDefinitionUrlPosition(markdown, node)
+          if (!urlPoints) return SKIP
 
-      const urlPosition = getLinkUrlPosition(markdown, start, end)
-      if (!urlPosition) return SKIP
+          starlightLinks.push(makeStarlightLink(node.url, urlPoints))
 
-      starlightLinks.push({
-        url: node.url,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        slug: node.url.includes('#') ? node.url.split('#')[0]! : node.url,
-        start: getPositionFromPoint(urlPosition.start),
-        end: getPositionFromPoint(urlPosition.end),
-      })
+          return SKIP
+        }
+        case 'link': {
+          if (node.url.startsWith('#')) return SKIP
 
-      return SKIP
+          const urlPoints = getMarkdownLinkUrlPosition(markdown, node)
+          if (!urlPoints) return SKIP
+
+          starlightLinks.push(makeStarlightLink(node.url, urlPoints))
+
+          return SKIP
+        }
+        case 'mdxJsxFlowElement':
+        case 'mdxJsxTextElement': {
+          if (!node.name) return CONTINUE
+
+          const prop = linkComponentMap[node.name]
+          if (!prop) return CONTINUE
+
+          const href = node.attributes.find((attr) => attr.type === 'mdxJsxAttribute' && attr.name === prop)
+          if (!href || typeof href.value !== 'string') return SKIP
+          if (href.value.startsWith('#')) return SKIP
+
+          const urlPoints = getHtmlAttributeValuePosition(markdown, href)
+          if (!urlPoints) return SKIP
+
+          starlightLinks.push(makeStarlightLink(href.value, urlPoints))
+
+          return SKIP
+        }
+        default: {
+          return CONTINUE
+        }
+      }
     })
   } catch {
     // Ignore parsing errors.
@@ -60,20 +104,71 @@ export function getStarlightLinks(document: TextDocument) {
   return starlightLinks
 }
 
+function makeStarlightLink(url: string, points: Points): StarlightLink {
+  return {
+    url,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    slug: url.includes('#') ? url.split('#')[0]! : url,
+    start: getPositionFromPoint(points.start),
+    end: getPositionFromPoint(points.end),
+  }
+}
+
 export function getStarlightFrontmatter(markdown: string) {
   return matter(markdown).data as StarlightFrontmatter
 }
 
-function getLinkUrlPosition(markdown: string, start: Point, end: Point): { start: Point; end: Point } | undefined {
+function getMarkdownLinkUrlPosition(markdown: string, node: Node): Points | undefined {
+  const points = getNodePoints(node)
+  if (!points) return
+  const { start, end } = points
+
   const linkStr = markdown.slice(start.offset, end.offset)
 
-  const match = linkUrlRegex.exec(linkStr)
+  const match = markdownLinkUrlRegex.exec(linkStr)
   const prefix = match?.groups?.['prefix']
   const url = match?.groups?.['url']
   if (!prefix || url === undefined) return
 
   const urlStart = { line: start.line, column: start.column + prefix.length }
   const urlEnd = { line: start.line, column: urlStart.column + url.length }
+
+  return { start: urlStart, end: urlEnd }
+}
+
+function getMarkdownDefinitionUrlPosition(markdown: string, node: Node): Points | undefined {
+  const points = getNodePoints(node)
+  if (!points) return
+  const { start, end } = points
+
+  const definitionStr = markdown.slice(start.offset, end.offset)
+
+  const match = markdownDefinitionUrlRegex.exec(definitionStr)
+  const prefix = match?.groups?.['prefix']
+  const url = match?.groups?.['url']
+  if (!prefix || url === undefined) return
+
+  const urlStart = { line: start.line, column: start.column + prefix.length }
+  const urlEnd = { line: start.line, column: urlStart.column + url.length }
+
+  return { start: urlStart, end: urlEnd }
+}
+
+function getHtmlAttributeValuePosition(html: string, node: Node): Points | undefined {
+  const points = getNodePoints(node)
+  if (!points) return
+  const { start, end } = points
+
+  const attributeStr = html.slice(start.offset, end.offset)
+
+  const match = htmlAttributeValueRegex.exec(attributeStr)
+  const prefix = match?.groups?.['prefix']
+  const value = match?.groups?.['quotedValue'] ?? match?.groups?.['unquotedValue']
+  const isQuoted = match?.groups?.['quotedValue'] !== undefined
+  if (!prefix || value === undefined) return
+
+  const urlStart = { line: start.line, column: start.column + prefix.length + (isQuoted ? 1 : 0) }
+  const urlEnd = { line: start.line, column: urlStart.column + value.length }
 
   return { start: urlStart, end: urlEnd }
 }
@@ -128,6 +223,13 @@ function getPositionFromPoint(point: Point): Position {
   return { line: point.line - 1, character: point.column - 1 }
 }
 
+function getNodePoints(node: Node) {
+  const start = pointStart(node)
+  const end = pointEnd(node)
+  if (!start || !end) return undefined
+  return { start, end }
+}
+
 function isMdxIdAttribute(attribute: MdxJsxAttribute | MdxJsxExpressionAttribute): attribute is MdxIdAttribute {
   return (
     attribute.type === 'mdxJsxAttribute' &&
@@ -137,7 +239,14 @@ function isMdxIdAttribute(attribute: MdxJsxAttribute | MdxJsxExpressionAttribute
   )
 }
 
+type Node = Parameters<typeof pointStart>[0]
+
 type Point = NonNullable<ReturnType<typeof pointStart>>
+
+interface Points {
+  start: Point
+  end: Point
+}
 
 interface MdxIdAttribute {
   name: 'id'
@@ -162,3 +271,6 @@ interface StarlightFrontmatter {
   description?: string
   slug?: string
 }
+
+// A record of component names mapped to their URL attribute names.
+export type LinkComponentMap = Record<string, string>

@@ -98,6 +98,7 @@ function getStarlightProject(program: Program): StarlightProject {
     throw new Error('Failed to find Starlight configuration in the Astro configuration file.')
   }
 
+  const defaultLocale = getStarlightDefaultLocaleConfig(starlightConfigAst)
   const locales = getStarlightLocales(program, starlightConfigAst)
 
   const base = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'base')
@@ -113,6 +114,8 @@ function getStarlightProject(program: Program): StarlightProject {
     },
   }
 
+  if (defaultLocale) starlightProject.config.defaultLocale = defaultLocale
+
   if (locales) {
     starlightProject.config.locales = locales
     if (Object.keys(locales).length > 1) starlightProject.config.isMultilingual = true
@@ -122,6 +125,22 @@ function getStarlightProject(program: Program): StarlightProject {
   if (srcDir) starlightProject.context.srcDir = srcDir
 
   return starlightProject
+}
+
+function getStarlightDefaultLocaleConfig(starlightConfig: ObjectExpression) {
+  const defaultLocaleProperty = starlightConfig.properties.find(
+    (property) =>
+      isObjectProperty(property) &&
+      ((isIdentifier(property.key) && property.key.name === 'defaultLocale') ||
+        (isStringLiteral(property.key) && property.key.value === 'defaultLocale')),
+  )
+
+  return defaultLocaleProperty &&
+    isObjectProperty(defaultLocaleProperty) &&
+    isStringLiteral(defaultLocaleProperty.value) &&
+    defaultLocaleProperty.value.value !== 'root'
+    ? defaultLocaleProperty.value.value
+    : undefined
 }
 
 function getStarlightLocales(program: Program, starlightConfig: ObjectExpression) {

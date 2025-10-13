@@ -1,0 +1,17 @@
+{
+  "name": "starlight-links-tests",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "tsc -p .",
+    "pretest": "pnpm -w build && pnpm build",
+    "test": "node dist"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.5.2",
+    "@types/vscode": "^1.102.0",
+    "@vscode/test-electron": "^2.5.2",
+    "mocha": "^11.7.4"
+  },
+  "private": true
+}

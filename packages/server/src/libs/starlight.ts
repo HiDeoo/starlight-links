@@ -13,15 +13,46 @@ import { getFragments, getStarlightFrontmatter } from './markdown'
 const runWithConcurrency = pLimit(10)
 
 export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promise<LinksData> {
-  let files = await glob(StarlightMarkdownContentGlob, { cwd: lspOptions.fsPaths.content, onlyFiles: true })
+  const { config, fsPaths } = lspOptions
+
+  let files = await glob(StarlightMarkdownContentGlob, { cwd: fsPaths.content, onlyFiles: true })
   files = files.filter((file) => stripExtension(path.basename(file)) !== '404')
 
-  // eslint-disable-next-line unicorn/no-array-method-this-argument
-  const data = await runWithConcurrency.map(files, async (file) =>
-    getLinkData(lspOptions, path.join(lspOptions.fsPaths.content, file)),
-  )
+  const fallbackCandidateSlugs: string[] = []
 
-  return new Map(data)
+  // eslint-disable-next-line unicorn/no-array-method-this-argument
+  const data = await runWithConcurrency.map(files, async (file) => {
+    const linkData = await getLinkData(lspOptions, path.join(fsPaths.content, file))
+
+    if (
+      config.isMultilingual &&
+      ((!config.defaultLocale && !linkData[1].locale) ||
+        (config.defaultLocale && linkData[1].locale === config.defaultLocale))
+    ) {
+      fallbackCandidateSlugs.push(linkData[0])
+    }
+
+    return linkData
+  })
+
+  const linksData = new Map(data)
+
+  if (config.isMultilingual && config.locales) {
+    for (const locale of Object.keys(config.locales)) {
+      for (const slug of fallbackCandidateSlugs) {
+        const localizedSlug = `/${locale}${slug}`
+
+        const localizedLinkData = linksData.get(localizedSlug)
+        if (localizedLinkData) continue
+        const defaultLocaleLinkData = linksData.get(slug)
+        if (!defaultLocaleLinkData) continue
+
+        linksData.set(localizedSlug, { ...defaultLocaleLinkData, locale })
+      }
+    }
+  }
+
+  return linksData
 }
 
 export async function getLinkData(lspOptions: StarlightLinksLspOptions, fsPath: string, relativeFsPath?: string) {

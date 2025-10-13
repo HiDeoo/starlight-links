@@ -8,6 +8,7 @@
   "main": "./dist/extension.js",
   "scripts": {
     "build": "tsdown",
+    "test": "pnpm -F starlight-links-tests test",
     "vscode:package": "pnpx @vscode/vsce package",
     "vscode:prepublish": "pnpm build",
     "lint": "eslint . --cache --max-warnings=0 && tsc --noEmit",
@@ -67,6 +68,20 @@
           "default": true,
           "markdownDescription": "Limit suggested links to the current document's locale in multilingual Starlight projects.",
           "order": 1
+        },
+        "starlightLinks.customComponents": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "contains": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "default": [],
+          "markdownDescription": "List of additional components and associated prop names to be treated as links.",
+          "order": 2
         }
       }
     }
