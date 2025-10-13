@@ -10,4 +10,5 @@ coverage
 dist
 dist-ssr
 out
+packages/tests/fixtures
 pnpm-lock.yaml

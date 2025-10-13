@@ -8,6 +8,7 @@
   "main": "./dist/extension.js",
   "scripts": {
     "build": "tsdown",
+    "test": "pnpm -F starlight-links-tests test",
     "vscode:package": "pnpx @vscode/vsce package",
     "vscode:prepublish": "pnpm build",
     "lint": "eslint . --cache --max-warnings=0 && tsc --noEmit",

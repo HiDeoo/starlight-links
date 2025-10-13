@@ -14,8 +14,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.ref }}
 
 jobs:
-  lint:
-    name: Lint
+  lint_test:
+    name: Lint & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,3 +35,8 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Test
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: pnpm test

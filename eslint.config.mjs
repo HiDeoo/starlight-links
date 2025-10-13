@@ -10,4 +10,7 @@ export default hideoo([
       },
     },
   },
+  {
+    ignores: ['packages/tests/fixtures/**'],
+  },
 ])
