@@ -1,0 +1,19 @@
+---
+title: Test
+---
+
+[markdown-link](/)
+
+[markdown-reference-link][definition]
+
+[definition]: /
+
+<a href="/">html-link</a>
+
+import { CardGrid, LinkCard, LinkButton } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<LinkCard title="linkcard-link" href="/" />
+</CardGrid>
+
+<LinkButton href="/">linkbutton-link</LinkButton>

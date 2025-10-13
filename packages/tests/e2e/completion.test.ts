@@ -33,6 +33,18 @@ const definitions: TestDefinition[] = [
     lineAfterLinkCompletion: '<a href="/achivi-amans/">html-link</a>',
     lineAfterFragmentCompletion: '<a href="/achivi-amans/#magnum-eodem-nec">html-link</a>',
   },
+  {
+    name: 'linkcard link',
+    position: [16, 41],
+    lineAfterLinkCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/" />',
+    lineAfterFragmentCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/#magnum-eodem-nec" />',
+  },
+  {
+    name: 'linkbutton link',
+    position: [19, 20],
+    lineAfterLinkCompletion: '<LinkButton href="/achivi-amans/">linkbutton-link</LinkButton>',
+    lineAfterFragmentCompletion: '<LinkButton href="/achivi-amans/#magnum-eodem-nec">linkbutton-link</LinkButton>',
+  },
 ] as const
 
 for (const definition of definitions) {

@@ -35,7 +35,7 @@ export function getStarlightLinks(document: TextDocument) {
   try {
     const tree = processor.parse(markdown)
 
-    visit(tree, ['definition', 'link', 'mdxJsxTextElement'], (node) => {
+    visit(tree, ['definition', 'link', 'mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
       // https://github.com/syntax-tree/mdast#nodes
       // https://github.com/syntax-tree/mdast-util-mdx-jsx#nodes
       switch (node.type) {
@@ -59,8 +59,9 @@ export function getStarlightLinks(document: TextDocument) {
 
           return SKIP
         }
+        case 'mdxJsxFlowElement':
         case 'mdxJsxTextElement': {
-          if (node.name !== 'a') return CONTINUE
+          if (node.name !== 'a' && node.name !== 'LinkCard' && node.name !== 'LinkButton') return CONTINUE
 
           const href = node.attributes.find((attr) => attr.type === 'mdxJsxAttribute' && attr.name === 'href')
           if (!href || typeof href.value !== 'string') return SKIP

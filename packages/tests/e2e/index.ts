@@ -1,6 +1,7 @@
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
-import { runTests } from '@vscode/test-electron'
+import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 
 import manifest from '../../../package.json'
 
@@ -14,14 +15,25 @@ async function run() {
 
     // The path to the test workspace folder containing the fixtures and test file.
     const testWorkspace = path.resolve(__dirname, '../fixtures/basics')
-    const testFile = path.join(testWorkspace, 'src/content/docs/test.md')
+    const testFile = path.join(testWorkspace, 'src/content/docs/test.mdx')
 
-    // Download VS Code, unzip it and run the integration tests.
+    // Download VS Code and unzip it.
+    const vscodeExecutablePath = await downloadAndUnzipVSCode(manifest.engines.vscode.slice(1))
+
+    // Install the MDX extension.
+    const [cliPath, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
+    if (!cliPath) throw new Error('Failed to resolve the VS Code CLI path.')
+    spawnSync(cliPath, [...args, '--install-extension', 'unifiedjs.vscode-mdx'], {
+      encoding: 'utf8',
+      stdio: 'inherit',
+    })
+
+    // Run the integration tests.
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: ['--disable-extensions', testWorkspace, testFile],
-      version: manifest.engines.vscode.slice(1),
+      launchArgs: [testWorkspace, testFile],
+      vscodeExecutablePath,
     })
   } catch (error) {
     logErrorAndExit(error)
