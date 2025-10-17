@@ -46,6 +46,7 @@ function getStarlightProject(program: Program): StarlightProject {
   let starlightConfigAst: ObjectExpression | undefined
 
   traverse(program, {
+    noScope: true,
     ExportDefaultDeclaration(path) {
       if (!isCallExpression(path.node.declaration)) {
         throw new Error(
