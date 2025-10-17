@@ -1,5 +1,11 @@
 # starlight-links
 
+## 0.2.1
+
+### Patch Changes
+
+- [#7](https://github.com/HiDeoo/starlight-links/pull/7) [`6e951c8`](https://github.com/HiDeoo/starlight-links/commit/6e951c8257d0941b89bc9616a9eec95f901f5a52) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Fixes a potential Starlight configuration parsing issue.
+
 ## 0.2.0
 
 ### Minor Changes
