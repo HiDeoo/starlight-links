@@ -3,7 +3,9 @@ import path from 'node:path'
 
 import Mocha from 'mocha'
 
-export function run(): Promise<void> {
+export function run(runner: string): Promise<void> {
+  const rootDir = path.dirname(runner)
+
   return new Promise((resolve, reject) => {
     const mocha = new Mocha({
       color: true,
@@ -11,10 +13,10 @@ export function run(): Promise<void> {
       timeout: 10_000,
     })
 
-    const files = globSync('**/**.test.js', { cwd: __dirname })
+    const files = globSync('**/**.test.js', { cwd: rootDir })
 
     for (const file of files) {
-      mocha.addFile(path.resolve(__dirname, file))
+      mocha.addFile(path.resolve(rootDir, file))
     }
 
     try {
