@@ -8,9 +8,17 @@ import {
   ConfigurationTarget,
   Position,
   Selection,
+  Uri,
   window,
   workspace,
 } from 'vscode'
+
+export function openContentFile(relativePath: string) {
+  const workspaceUri = workspace.workspaceFolders?.[0]?.uri
+  if (!workspaceUri) throw new Error('No workspace folder found.')
+
+  return commands.executeCommand('vscode.open', Uri.joinPath(workspaceUri, 'src/content/docs/', relativePath))
+}
 
 export function revertFile() {
   return commands.executeCommand('workbench.action.files.revert')
@@ -119,7 +127,7 @@ function getActiveEditor() {
   return editor
 }
 
-interface ExpectedLinkCompletionItem {
+export interface ExpectedLinkCompletionItem {
   link: string
   description?: string
 }

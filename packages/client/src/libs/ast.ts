@@ -119,7 +119,7 @@ function getStarlightProject(program: Program): StarlightProject {
 
   if (locales) {
     starlightProject.config.locales = locales
-    if (Object.keys(locales).length > 1) starlightProject.config.isMultilingual = true
+    if (Object.keys(locales).length > 0) starlightProject.config.isMultilingual = true
   }
 
   if (base) starlightProject.context.base = stripLeadingSlash(stripTrailingSlash(base))

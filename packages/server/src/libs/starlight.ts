@@ -40,7 +40,9 @@ export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promis
   if (config.isMultilingual && config.locales) {
     for (const locale of Object.keys(config.locales)) {
       for (const slug of fallbackCandidateSlugs) {
-        const localizedSlug = `/${locale}${slug}`
+        const localizedSlug = config.defaultLocale
+          ? slug.replace(`/${config.defaultLocale}/`, `/${locale}/`)
+          : `/${locale}${slug}`
 
         const localizedLinkData = linksData.get(localizedSlug)
         if (localizedLinkData) continue

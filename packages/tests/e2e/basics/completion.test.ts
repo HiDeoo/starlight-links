@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 
+import { ExpectedRootFragmentCompletionItems, ExpectedRootLinkCompletionItems } from '../expectation'
 import {
   applyCompletionItem,
   assertLinkCompletionItems,
@@ -9,7 +10,7 @@ import {
   revertFile,
   updateConfig,
   write,
-} from './utils'
+} from '../utils'
 
 teardown(async () => {
   await revertFile()
@@ -55,10 +56,7 @@ for (const definition of definitions) {
 
       const completions = await getCompletionItems()
 
-      assertLinkCompletionItems(completions, [
-        { link: '/achivi-amans/', description: 'Achivi amans' },
-        { link: '/terrae/pertimuit-munere/', description: 'Pertimuit munere' },
-      ])
+      assertLinkCompletionItems(completions, ExpectedRootLinkCompletionItems)
 
       await applyCompletionItem(completions[0])
 
@@ -77,12 +75,7 @@ for (const definition of definitions) {
 
       completions = await getCompletionItems()
 
-      assertLinkCompletionItems(completions, [
-        { link: '/achivi-amans/#_top' },
-        { link: '/achivi-amans/#magnum-eodem-nec', description: 'Magnum eodem nec' },
-        { link: '/achivi-amans/#nostris-sollerti-dedit', description: 'Nostris sollerti dedit' },
-        { link: '/achivi-amans/#traharis-miserae', description: 'Traharis miserae' },
-      ])
+      assertLinkCompletionItems(completions, ExpectedRootFragmentCompletionItems)
 
       await applyCompletionItem(completions[1])
 
@@ -107,10 +100,7 @@ test('provides custom link completions', async () => {
 
   completions = await getCompletionItems()
 
-  assertLinkCompletionItems(completions, [
-    { link: '/achivi-amans/', description: 'Achivi amans' },
-    { link: '/terrae/pertimuit-munere/', description: 'Pertimuit munere' },
-  ])
+  assertLinkCompletionItems(completions, ExpectedRootLinkCompletionItems)
 
   await applyCompletionItem(completions[0])
 
