@@ -5,11 +5,14 @@ import {
   isCallExpression,
   isExportNamedDeclaration,
   isIdentifier,
+  isImportDeclaration,
   isObjectExpression,
   isObjectProperty,
   isStringLiteral,
+  isTSSatisfiesExpression,
   isVariableDeclaration,
   type Identifier,
+  type ImportDeclaration,
   type ObjectExpression,
   type ObjectProperty,
   type Program,
@@ -22,7 +25,7 @@ import type { StarlightConfig, StarlightProject } from 'starlight-links-shared/s
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const traverse: typeof babelTraverse = babelTraverse.default ?? babelTraverse
 
-export function getStarlightProjectFromConfig(code: string) {
+export function getStarlightProjectFromConfig(code: string, fileReader: FileReader) {
   let ast: ParseResult
 
   try {
@@ -34,14 +37,14 @@ export function getStarlightProjectFromConfig(code: string) {
     )
   }
 
-  return getStarlightProject(ast.program)
+  return getStarlightProject(ast.program, fileReader)
 }
 
 function parseCode(code: string) {
   return parse(code, { sourceType: 'unambiguous', plugins: ['typescript'] })
 }
 
-function getStarlightProject(program: Program): StarlightProject {
+async function getStarlightProject(program: Program, fileReader: FileReader): Promise<StarlightProject> {
   let astroConfigAst: ObjectExpression | undefined
   let starlightConfigAst: ObjectExpression | undefined
 
@@ -100,7 +103,7 @@ function getStarlightProject(program: Program): StarlightProject {
   }
 
   const defaultLocale = getStarlightDefaultLocaleConfig(starlightConfigAst)
-  const locales = getStarlightLocales(program, starlightConfigAst)
+  const locales = await getStarlightLocales(program, starlightConfigAst, fileReader)
 
   const base = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'base')
   const trailingSlash = getStringLiteralValueFromObjectExpression(program, astroConfigAst, 'trailingSlash')
@@ -144,7 +147,7 @@ function getStarlightDefaultLocaleConfig(starlightConfig: ObjectExpression) {
     : undefined
 }
 
-function getStarlightLocales(program: Program, starlightConfig: ObjectExpression) {
+async function getStarlightLocales(program: Program, starlightConfig: ObjectExpression, fileReader: FileReader) {
   const localesProperty = starlightConfig.properties.find(
     (property) =>
       isObjectProperty(property) &&
@@ -161,7 +164,7 @@ function getStarlightLocales(program: Program, starlightConfig: ObjectExpression
   }
 
   const localesObjectExpression = isIdentifier(localesProperty.value)
-    ? getObjectExpressionFromIdentifier(program, localesProperty.value)
+    ? await getObjectExpressionFromIdentifier(program, localesProperty.value, fileReader)
     : localesProperty.value
 
   if (!localesObjectExpression) {
@@ -197,10 +200,41 @@ function getStarlightLocales(program: Program, starlightConfig: ObjectExpression
   return localesConfig
 }
 
-function getObjectExpressionFromIdentifier(program: Program, identifier: Identifier) {
+async function getObjectExpressionFromImportSpecifier(
+  identifier: Identifier,
+  importDeclaration: ImportDeclaration,
+  fileReader: FileReader,
+) {
+  const source = importDeclaration.source.value
+
+  if (!source.startsWith('.')) {
+    throw new Error(`Failed to resolve imported Starlight configuration from non-relative module \`${source}\`.`)
+  }
+
+  const code = await fileReader(source)
+  const ast = parseCode(code)
+
+  return getObjectExpressionFromIdentifier(ast.program, identifier, fileReader)
+}
+
+async function getObjectExpressionFromIdentifier(
+  program: Program,
+  identifier: Identifier,
+  fileReader: FileReader,
+): Promise<ObjectExpression | undefined> {
   let objectExpression: ObjectExpression | undefined
 
   for (const bodyNode of program.body) {
+    if (isImportDeclaration(bodyNode)) {
+      const identifierImportSpecifier = bodyNode.specifiers.find(
+        (specifier) => isIdentifier(specifier.local) && specifier.local.name === identifier.name,
+      )
+
+      if (identifierImportSpecifier) {
+        return getObjectExpressionFromImportSpecifier(identifier, bodyNode, fileReader)
+      }
+    }
+
     const variableDeclaration = isVariableDeclaration(bodyNode)
       ? bodyNode
       : isExportNamedDeclaration(bodyNode) && isVariableDeclaration(bodyNode.declaration)
@@ -212,12 +246,12 @@ function getObjectExpressionFromIdentifier(program: Program, identifier: Identif
     }
 
     for (const declaration of variableDeclaration.declarations) {
-      if (
-        isIdentifier(declaration.id) &&
-        declaration.id.name === identifier.name &&
-        isObjectExpression(declaration.init)
-      ) {
-        objectExpression = declaration.init
+      if (isIdentifier(declaration.id) && declaration.id.name === identifier.name) {
+        if (isObjectExpression(declaration.init)) {
+          objectExpression = declaration.init
+        } else if (isTSSatisfiesExpression(declaration.init) && isObjectExpression(declaration.init.expression)) {
+          objectExpression = declaration.init.expression
+        }
       }
     }
   }
@@ -283,3 +317,5 @@ function getStringLiteralValueFromObjectExpression(
 function getObjectPropertyName(property: ObjectProperty) {
   return isIdentifier(property.key) ? property.key.name : isStringLiteral(property.key) ? property.key.value : undefined
 }
+
+type FileReader = (relativeFsPath: string) => Promise<string>
