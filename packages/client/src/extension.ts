@@ -96,6 +96,10 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
       )
 
       await client.start()
+
+      return new Promise<void>((resolve) => {
+        client?.onNotification('starlightLinks/initialized', resolve)
+      })
     },
   )
 }
