@@ -8,7 +8,8 @@ import { StarlightMarkdownContentGlob } from 'starlight-links-shared/starlight.j
 import { glob } from 'tinyglobby'
 
 import { getLocaleFromSlug } from './i18n'
-import { getFragments, getStarlightFrontmatter } from './markdown'
+import { getFragments } from './markdown'
+import { getStarlightFrontmatter } from './yaml'
 
 const runWithConcurrency = pLimit(10)
 

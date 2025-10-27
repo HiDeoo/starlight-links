@@ -1,4 +1,3 @@
-import matter from 'gray-matter'
 import type { MdxJsxAttribute, MdxJsxExpressionAttribute } from 'mdast-util-mdx-jsx'
 import { toString } from 'mdast-util-to-string'
 import { remark } from 'remark'
@@ -10,6 +9,8 @@ import { pointEnd, pointStart } from 'unist-util-position'
 import { CONTINUE, SKIP, visit } from 'unist-util-visit'
 import type { Position, TextDocumentPositionParams } from 'vscode-languageserver/node'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
+
+import { getStarlightFrontmatterLinks } from './yaml'
 
 const processor = remark().use(remarkMdx).use(remarkFrontmatter).freeze()
 
@@ -50,12 +51,22 @@ export function getStarlightLinks(document: TextDocument, linkComponentMap: Link
   try {
     const tree = processor.parse(markdown)
 
-    visit(tree, ['definition', 'link', 'mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
+    visit(tree, ['definition', 'link', 'mdxJsxFlowElement', 'mdxJsxTextElement', 'yaml'], (node) => {
       // https://github.com/syntax-tree/mdast#nodes
       // https://github.com/syntax-tree/mdast-util-mdx-jsx#nodes
       switch (node.type) {
+        case 'yaml': {
+          const frontmatterLinks = getStarlightFrontmatterLinks(node.value)
+
+          for (const link of frontmatterLinks) {
+            if (!isStarlightLink(link.url)) continue
+            starlightLinks.push(makeStarlightLink(link.url, { start: link.start, end: link.end }))
+          }
+
+          return SKIP
+        }
         case 'definition': {
-          if (node.url.startsWith('#')) return SKIP
+          if (!isStarlightLink(node.url)) return SKIP
 
           const urlPoints = getMarkdownDefinitionUrlPosition(markdown, node)
           if (!urlPoints) return SKIP
@@ -65,7 +76,7 @@ export function getStarlightLinks(document: TextDocument, linkComponentMap: Link
           return SKIP
         }
         case 'link': {
-          if (node.url.startsWith('#')) return SKIP
+          if (!isStarlightLink(node.url)) return SKIP
 
           const urlPoints = getMarkdownLinkUrlPosition(markdown, node)
           if (!urlPoints) return SKIP
@@ -83,7 +94,7 @@ export function getStarlightLinks(document: TextDocument, linkComponentMap: Link
 
           const href = node.attributes.find((attr) => attr.type === 'mdxJsxAttribute' && attr.name === prop)
           if (!href || typeof href.value !== 'string') return SKIP
-          if (href.value.startsWith('#')) return SKIP
+          if (!isStarlightLink(href.value)) return SKIP
 
           const urlPoints = getHtmlAttributeValuePosition(markdown, href)
           if (!urlPoints) return SKIP
@@ -104,6 +115,10 @@ export function getStarlightLinks(document: TextDocument, linkComponentMap: Link
   return starlightLinks
 }
 
+function isStarlightLink(url: string) {
+  return url.startsWith('/')
+}
+
 function makeStarlightLink(url: string, points: Points): StarlightLink {
   return {
     url,
@@ -112,10 +127,6 @@ function makeStarlightLink(url: string, points: Points): StarlightLink {
     start: getPositionFromPoint(points.start),
     end: getPositionFromPoint(points.end),
   }
-}
-
-export function getStarlightFrontmatter(markdown: string) {
-  return matter(markdown).data as StarlightFrontmatter
 }
 
 function getMarkdownLinkUrlPosition(markdown: string, node: Node): Points | undefined {
@@ -243,7 +254,7 @@ type Node = Parameters<typeof pointStart>[0]
 
 type Point = NonNullable<ReturnType<typeof pointStart>>
 
-interface Points {
+export interface Points {
   start: Point
   end: Point
 }
@@ -264,12 +275,6 @@ interface StarlightLink {
   slug: string
   start: Position
   end: Position
-}
-
-interface StarlightFrontmatter {
-  title: string
-  description?: string
-  slug?: string
 }
 
 // A record of component names mapped to their URL attribute names.

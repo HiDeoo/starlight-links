@@ -18,32 +18,50 @@ teardown(async () => {
 
 const definitions: TestDefinition[] = [
   {
+    name: 'frontmatter prev link',
+    position: [4, 10],
+    lineAfterLinkCompletion: '  link: /achivi-amans/',
+    lineAfterFragmentCompletion: '  link: /achivi-amans/#magnum-eodem-nec',
+  },
+  {
+    name: 'frontmatter next link',
+    position: [7, 10],
+    lineAfterLinkCompletion: '  link: /achivi-amans/',
+    lineAfterFragmentCompletion: '  link: /achivi-amans/#magnum-eodem-nec',
+  },
+  {
+    name: 'frontmatter action link',
+    position: [12, 14],
+    lineAfterLinkCompletion: '      link: /achivi-amans/',
+    lineAfterFragmentCompletion: '      link: /achivi-amans/#magnum-eodem-nec',
+  },
+  {
     name: 'markdown link',
-    position: [5, 18],
+    position: [15, 18],
     lineAfterLinkCompletion: '[markdown-link](/achivi-amans/)',
     lineAfterFragmentCompletion: '[markdown-link](/achivi-amans/#magnum-eodem-nec)',
   },
   {
     name: 'markdown reference link',
-    position: [9, 16],
+    position: [19, 16],
     lineAfterLinkCompletion: '[definition]: /achivi-amans/',
     lineAfterFragmentCompletion: '[definition]: /achivi-amans/#magnum-eodem-nec',
   },
   {
     name: 'html link',
-    position: [11, 11],
+    position: [21, 11],
     lineAfterLinkCompletion: '<a href="/achivi-amans/">html-link</a>',
     lineAfterFragmentCompletion: '<a href="/achivi-amans/#magnum-eodem-nec">html-link</a>',
   },
   {
     name: 'linkcard link',
-    position: [16, 41],
+    position: [26, 41],
     lineAfterLinkCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/" />',
     lineAfterFragmentCompletion: '	<LinkCard title="linkcard-link" href="/achivi-amans/#magnum-eodem-nec" />',
   },
   {
     name: 'linkbutton link',
-    position: [19, 20],
+    position: [29, 20],
     lineAfterLinkCompletion: '<LinkButton href="/achivi-amans/">linkbutton-link</LinkButton>',
     lineAfterFragmentCompletion: '<LinkButton href="/achivi-amans/#magnum-eodem-nec">linkbutton-link</LinkButton>',
   },
@@ -90,7 +108,9 @@ test('provides custom link completions', async () => {
   const customComponentsSection = 'starlightLinks.customComponents'
   await updateConfig(customComponentsSection, undefined)
 
-  moveCursor(21, 19)
+  const position = [31, 19] as const
+
+  moveCursor(position[0], position[1])
 
   let completions = await getCompletionItems()
 
@@ -104,7 +124,7 @@ test('provides custom link completions', async () => {
 
   await applyCompletionItem(completions[0])
 
-  const text = getLineText(21)
+  const text = getLineText(position[0])
 
   assert.equal(text, '<CustomLink url="/achivi-amans/" />')
 
