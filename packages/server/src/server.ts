@@ -88,6 +88,7 @@ async function onConnectionInitialized() {
     .catch((error: unknown) => {
       connection.console.error(`Failed to load links data: ${error instanceof Error ? error.message : String(error)}`)
     })
+    .finally(() => connection.sendNotification('starlightLinks/initialized'))
 }
 
 async function onConnectionCompletion(completion: CompletionParams) {
