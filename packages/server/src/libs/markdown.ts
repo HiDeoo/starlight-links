@@ -184,13 +184,15 @@ function getHtmlAttributeValuePosition(html: string, node: Node): Points | undef
   return { start: urlStart, end: urlEnd }
 }
 
-export function getFragments(content: string): MarkdownFragment[] {
+export function getFragments(content: string): Map<string, MarkdownFragment> {
   const tree = processor.parse(content)
   const slugger = getNewSlugger()
 
-  const fragments: MarkdownFragment[] = [{ slug: '_top' }]
+  const fragments = new Map<string, MarkdownFragment>([['_top', { slug: '_top' }]])
 
   visit(tree, ['heading', 'html', 'mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
+    const line = node.position?.start.line
+
     // https://github.com/syntax-tree/mdast#nodes
     // https://github.com/syntax-tree/mdast-util-mdx-jsx#nodes
     switch (node.type) {
@@ -200,14 +202,15 @@ export function getFragments(content: string): MarkdownFragment[] {
 
         // Remove the last trailing hyphen from the slug like Astro does if it exists.
         // https://github.com/withastro/astro/blob/74ee2e45ecc9edbe285eadee6d0b94fc47d0d125/packages/integrations/markdoc/src/heading-ids.ts#L21
-        fragments.push({ label: content, slug: slugger.slug(content).replace(/-$/, '') })
+        const slug = slugger.slug(content).replace(/-$/, '')
+        fragments.set(slug, { label: content, line, slug })
 
         break
       }
       case 'mdxJsxFlowElement': {
         for (const attribute of node.attributes) {
           if (isMdxIdAttribute(attribute)) {
-            fragments.push({ slug: attribute.value })
+            fragments.set(attribute.value, { line, slug: attribute.value })
             break
           }
         }
@@ -217,7 +220,7 @@ export function getFragments(content: string): MarkdownFragment[] {
       case 'mdxJsxTextElement': {
         for (const attribute of node.attributes) {
           if (isMdxIdAttribute(attribute)) {
-            fragments.push({ slug: attribute.value })
+            fragments.set(attribute.value, { line, slug: attribute.value })
             break
           }
         }
@@ -268,9 +271,10 @@ interface MdxIdAttribute {
 interface MarkdownFragment {
   label?: string
   slug: string
+  line?: number | undefined
 }
 
-interface StarlightLink {
+export interface StarlightLink {
   url: string
   slug: string
   start: Position

@@ -32,6 +32,7 @@ import {
   getStarlightLinkAtPosition,
   getStarlightLinks,
   type LinkComponentMap,
+  type StarlightLink,
 } from './libs/markdown'
 import { getContentFragments, getContentFsPath, getLinkData, getLinksData, type LinksData } from './libs/starlight'
 
@@ -52,6 +53,7 @@ function runLsp() {
   connection.onDidChangeWatchedFiles(onWatchedFilesChange)
   connection.onDefinition(onConnectionDefinition)
   connection.onDocumentLinks(onConnectionDocumentLinks)
+  connection.onDocumentLinkResolve(onConnectionDocumentLinkResolve)
   connection.onHover(onConnectionHover)
 
   documents.listen(connection)
@@ -109,7 +111,7 @@ async function onConnectionCompletion(completion: CompletionParams) {
 
     const fragments = await getContentFragments(linkData.fsPath)
 
-    for (const fragment of fragments) {
+    for (const fragment of fragments.values()) {
       items.push(makeCompletionItem(range, `${starlightLink.slug}#${fragment.slug}`, fragment.label))
     }
 
@@ -140,7 +142,8 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
     const fsPath = fileURLToPath(change.uri)
 
     switch (change.type) {
-      case FileChangeType.Created: {
+      case FileChangeType.Created:
+      case FileChangeType.Changed: {
         const [slug, data] = await getLinkData(lspOptions, fsPath)
         linksData.set(slug, data)
         break
@@ -157,7 +160,7 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
   }
 }
 
-function onConnectionDefinition(definition: DefinitionParams) {
+async function onConnectionDefinition(definition: DefinitionParams) {
   if (!lspOptions) return
 
   const document = getDocument(definition)
@@ -170,6 +173,14 @@ function onConnectionDefinition(definition: DefinitionParams) {
   if (!linkData) return
 
   const position = { line: 0, character: 0 }
+
+  const fragment = starlightLink.url.split('#')[1]
+
+  if (fragment) {
+    const fragments = await getContentFragments(linkData.fsPath)
+    const data = fragments.get(fragment)
+    if (data?.line) position.line = data.line - 1
+  }
 
   return [
     LocationLink.create(
@@ -194,12 +205,31 @@ function onConnectionDocumentLinks({ textDocument }: DocumentLinkParams) {
     if (!linkData) continue
 
     links.push({
-      target: pathToFileURL(linkData.fsPath).toString(),
       range: { start: markdownLink.start, end: markdownLink.end },
+      data: makeDocumentLinkData(markdownLink),
     })
   }
 
   return links
+}
+
+async function onConnectionDocumentLinkResolve(link: DocumentLink) {
+  if (!isDocumentLinkData(link.data)) return
+  const linkData = linksData.get(link.data.slug)
+  if (!linkData) return
+
+  let lineIdentifier = ''
+
+  if (link.data.fragment) {
+    const fragments = await getContentFragments(linkData.fsPath)
+    const fragment = fragments.get(link.data.fragment)
+    if (fragment?.line) lineIdentifier = `#L${fragment.line}`
+  }
+
+  return {
+    ...link,
+    target: `${pathToFileURL(linkData.fsPath).toString()}${lineIdentifier}`,
+  }
 }
 
 function onConnectionHover(hover: HoverParams) {
@@ -244,4 +274,15 @@ function makeCompletionItem(
   if (details) item.labelDetails = { description: details }
 
   return item
+}
+
+function makeDocumentLinkData(link: StarlightLink) {
+  return {
+    slug: link.slug,
+    fragment: link.url.includes('#') ? link.url.split('#')[1] : undefined,
+  }
+}
+
+function isDocumentLinkData(data: unknown): data is ReturnType<typeof makeDocumentLinkData> {
+  return typeof data === 'object' && data !== null && 'slug' in data
 }
