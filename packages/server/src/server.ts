@@ -160,7 +160,7 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
   }
 }
 
-function onConnectionDefinition(definition: DefinitionParams) {
+async function onConnectionDefinition(definition: DefinitionParams) {
   if (!lspOptions) return
 
   const document = getDocument(definition)
@@ -173,6 +173,14 @@ function onConnectionDefinition(definition: DefinitionParams) {
   if (!linkData) return
 
   const position = { line: 0, character: 0 }
+
+  const fragment = starlightLink.url.split('#')[1]
+
+  if (fragment) {
+    const fragments = await getContentFragments(linkData.fsPath)
+    const data = fragments.get(fragment)
+    if (data?.line) position.line = data.line - 1
+  }
 
   return [
     LocationLink.create(
