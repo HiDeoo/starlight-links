@@ -74,7 +74,7 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
       const starlightFsPaths = getStarlightFsPaths(starlightConfigFsPath, starlightProject)
       const contentPattern = new RelativePattern(starlightFsPaths.content, StarlightMarkdownContentGlob)
 
-      const serverModule = Uri.joinPath(context.extensionUri, 'dist', 'server.js').fsPath
+      const serverModule = Uri.joinPath(context.extensionUri, 'dist', 'server.cjs').fsPath
 
       client = new LanguageClient(
         'starlight-links',

@@ -36,8 +36,6 @@ export function getStarlightFrontmatterLinks(yaml: string) {
             if (!link || !isStringScalar(link) || !link.range) continue
 
             starlightFrontmatterLinks.push(makeStarlightFrontmatterLink(link.value, link.range, lineCounter))
-
-            return visit.SKIP
           }
         }
       }

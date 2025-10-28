@@ -1,7 +1,7 @@
-import { globSync } from 'node:fs'
 import path from 'node:path'
 
 import Mocha from 'mocha'
+import { globSync } from 'tinyglobby'
 
 export function run(runner: string): Promise<void> {
   const rootDir = path.dirname(runner)

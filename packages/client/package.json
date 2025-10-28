@@ -12,7 +12,7 @@
   "devDependencies": {
     "@types/babel__traverse": "^7.28.0",
     "@types/node": "^24.5.2",
-    "@types/vscode": "^1.102.0"
+    "@types/vscode": "^1.99.3"
   },
   "private": true
 }
