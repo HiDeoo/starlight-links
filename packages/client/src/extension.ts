@@ -90,7 +90,7 @@ async function startLspServer(context: ExtensionContext, logger: LogOutputChanne
           ],
           initializationOptions: serializeLspOptions(starlightFsPaths, starlightProject),
           synchronize: {
-            fileEvents: workspace.createFileSystemWatcher(contentPattern, false, true, false),
+            fileEvents: workspace.createFileSystemWatcher(contentPattern, false, false, false),
           },
         },
       )

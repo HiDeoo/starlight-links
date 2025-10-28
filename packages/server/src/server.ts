@@ -140,7 +140,8 @@ async function onWatchedFilesChange({ changes }: DidChangeWatchedFilesParams) {
     const fsPath = fileURLToPath(change.uri)
 
     switch (change.type) {
-      case FileChangeType.Created: {
+      case FileChangeType.Created:
+      case FileChangeType.Changed: {
         const [slug, data] = await getLinkData(lspOptions, fsPath)
         linksData.set(slug, data)
         break
