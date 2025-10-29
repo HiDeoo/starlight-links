@@ -1,5 +1,29 @@
 # starlight-links
 
+## 0.3.0
+
+### Minor Changes
+
+- [#14](https://github.com/HiDeoo/starlight-links/pull/14) [`8a15ac4`](https://github.com/HiDeoo/starlight-links/commit/8a15ac40adeb32c66c6efba688f6854c9c51be72) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Adds support for navigating to the specific line in a content page where a heading is located when using the "Go to Definition" feature on internal links with fragments.
+
+- [#11](https://github.com/HiDeoo/starlight-links/pull/11) [`966651e`](https://github.com/HiDeoo/starlight-links/commit/966651e0c4a1dd5a25c1424293e0d2578afe1f78) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Adds suport for imported Starlight i18n configuration ([`locales`](https://starlight.astro.build/reference/configuration/#locales)) object.
+
+- [#13](https://github.com/HiDeoo/starlight-links/pull/13) [`9cfce59`](https://github.com/HiDeoo/starlight-links/commit/9cfce59ba81be3496e2bac8b06eff00fac7a417e) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Adds IntelliSense support for [previous page links](https://starlight.astro.build/reference/frontmatter/#prev), [next page links](https://starlight.astro.build/reference/frontmatter/#next), and [hero action links](https://starlight.astro.build/reference/frontmatter/#hero) in frontmatter.
+
+- [#15](https://github.com/HiDeoo/starlight-links/pull/15) [`5b07f99`](https://github.com/HiDeoo/starlight-links/commit/5b07f99a17ab28c1c8c6d613032aaa7ca2a748bd) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Adds Firebase Studio support.
+
+  This change required lowering the minimum supported VS Code version and shipping the extension in CommonJS instead of the ES Module format.
+
+- [#14](https://github.com/HiDeoo/starlight-links/pull/14) [`8a15ac4`](https://github.com/HiDeoo/starlight-links/commit/8a15ac40adeb32c66c6efba688f6854c9c51be72) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Adds support for navigating to the specific line in a content page where a heading is located when following internal links with fragments.
+
+### Patch Changes
+
+- [#14](https://github.com/HiDeoo/starlight-links/pull/14) [`8a15ac4`](https://github.com/HiDeoo/starlight-links/commit/8a15ac40adeb32c66c6efba688f6854c9c51be72) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Fixes an issue where internal link hovers could display incorrect information after editing the title or the description of a content page.
+
+- [#9](https://github.com/HiDeoo/starlight-links/pull/9) [`848e055`](https://github.com/HiDeoo/starlight-links/commit/848e0556a34f16037b08804aed142e717f319053) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Fixes an issue generating invalid link completions in multilingual projects with no root locale.
+
+- [#11](https://github.com/HiDeoo/starlight-links/pull/11) [`966651e`](https://github.com/HiDeoo/starlight-links/commit/966651e0c4a1dd5a25c1424293e0d2578afe1f78) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Fixes Starlight i18n configuration object parsing issue when such object is using the `satisfies` TypeScript operator.
+
 ## 0.2.1
 
 ### Patch Changes
