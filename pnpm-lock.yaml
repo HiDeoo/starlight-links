@@ -61,7 +61,7 @@ importers:
         specifier: ^24.5.2
         version: 24.5.2
       '@types/vscode':
-        specifier: ^1.102.0
+        specifier: ^1.99.3
         version: 1.104.0
 
   packages/server:
@@ -124,7 +124,7 @@ importers:
         specifier: ^24.5.2
         version: 24.5.2
       '@types/vscode':
-        specifier: ^1.102.0
+        specifier: ^1.99.3
         version: 1.104.0
       '@vscode/test-electron':
         specifier: ^2.5.2
@@ -132,6 +132,9 @@ importers:
       mocha:
         specifier: ^11.7.4
         version: 11.7.4
+      tinyglobby:
+        specifier: ^0.2.15
+        version: 0.2.15
 
 packages:
 

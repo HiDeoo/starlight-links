@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 
 import { ExpectedRootFragmentCompletionItems, ExpectedRootLinkCompletionItems } from '../expectation'
 import {
+  activateExtension,
   applyCompletionItem,
   assertLinkCompletionItems,
   getCompletionItems,
@@ -11,6 +12,10 @@ import {
   updateConfig,
   write,
 } from '../utils'
+
+suiteSetup(async () => {
+  await activateExtension()
+})
 
 teardown(async () => {
   await revertFile()

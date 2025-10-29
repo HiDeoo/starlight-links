@@ -6,6 +6,7 @@ export default defineConfig({
     server: 'packages/server/src/server.ts',
   },
   external: ['vscode'],
+  format: 'cjs',
   sourcemap: import.meta.env?.NODE_ENV === 'development',
 })
 

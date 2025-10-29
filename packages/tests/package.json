@@ -9,9 +9,10 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.5.2",
-    "@types/vscode": "^1.102.0",
+    "@types/vscode": "^1.99.3",
     "@vscode/test-electron": "^2.5.2",
-    "mocha": "^11.7.4"
+    "mocha": "^11.7.4",
+    "tinyglobby": "^0.2.15"
   },
   "private": true
 }

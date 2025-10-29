@@ -6,6 +6,7 @@ import {
   ExpectedFrenchLinkCompletionItems,
 } from '../expectation'
 import {
+  activateExtension,
   applyCompletionItem,
   assertLinkCompletionItems,
   getCompletionItems,
@@ -14,6 +15,10 @@ import {
   revertFile,
   write,
 } from '../utils'
+
+suiteSetup(async () => {
+  await activateExtension()
+})
 
 teardown(async () => {
   await revertFile()
