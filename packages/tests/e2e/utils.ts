@@ -6,12 +6,20 @@ import {
   commands,
   CompletionItemKind,
   ConfigurationTarget,
+  extensions,
   Position,
   Selection,
   Uri,
   window,
   workspace,
 } from 'vscode'
+
+export async function activateExtension() {
+  const extension = extensions.getExtension('	hideoo.starlight-links')
+  await extension?.activate()
+  // https://github.com/microsoft/vscode-extension-samples/blob/5839b5c2336e1488ee642a037a2084f2dd3d6755/lsp-sample/client/src/test/helper.ts#L24
+  await setTimeout(2000)
+}
 
 export function openContentFile(relativePath: string) {
   const workspaceUri = workspace.workspaceFolders?.[0]?.uri
