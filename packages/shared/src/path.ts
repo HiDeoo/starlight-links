@@ -12,6 +12,7 @@ export function slugifyPath(path: string, withTrailingSlash = false, base?: stri
         .replace(/index$/, '')
         .replaceAll('\\', '/')
         .split('/')
+        .filter((part) => part.length > 0)
         .map((part) => slug(part)),
     ].join('/'),
   )
