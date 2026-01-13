@@ -1,5 +1,11 @@
 # starlight-links
 
+## 0.3.1
+
+### Patch Changes
+
+- [#17](https://github.com/HiDeoo/starlight-links/pull/17) [`b73281b`](https://github.com/HiDeoo/starlight-links/commit/b73281b1a7c94757fb44fc6bb2abcdc0093e3165) Thanks [@HiDeoo](https://github.com/HiDeoo)! - Fixes an issue generating invalid link completions in projects using the Astro `base` configuration option.
+
 ## 0.3.0
 
 ### Minor Changes
