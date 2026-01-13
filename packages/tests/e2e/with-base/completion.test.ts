@@ -12,6 +12,7 @@ import {
   revertFile,
   updateConfig,
   write,
+  type ExpectedLinkCompletionItem,
 } from '../utils'
 
 suiteSetup(async () => {
@@ -22,14 +23,28 @@ teardown(async () => {
   await revertFile()
 })
 
-for (const definition of TestDefinitions) {
+function addBase(path: string) {
+  return path.replace(/\//, '/docs/')
+}
+
+function addBaseToExpectedLinkCompletionItems(items: ExpectedLinkCompletionItem[]) {
+  return items.map((item) => ({ ...item, link: addBase(item.link) }))
+}
+
+const definitions = TestDefinitions.map((definition) => ({
+  ...definition,
+  lineAfterLinkCompletion: addBase(definition.lineAfterLinkCompletion),
+  lineAfterFragmentCompletion: addBase(definition.lineAfterFragmentCompletion),
+}))
+
+for (const definition of definitions) {
   suite(definition.name, () => {
     test(`provides link completions (${definition.name})`, async () => {
       moveCursor(definition.position[0], definition.position[1])
 
       const completions = await getCompletionItems()
 
-      assertLinkCompletionItems(completions, ExpectedRootLinkCompletionItems)
+      assertLinkCompletionItems(completions, addBaseToExpectedLinkCompletionItems(ExpectedRootLinkCompletionItems))
 
       await applyCompletionItem(completions[0])
 
@@ -48,7 +63,7 @@ for (const definition of TestDefinitions) {
 
       completions = await getCompletionItems()
 
-      assertLinkCompletionItems(completions, ExpectedRootFragmentCompletionItems)
+      assertLinkCompletionItems(completions, addBaseToExpectedLinkCompletionItems(ExpectedRootFragmentCompletionItems))
 
       await applyCompletionItem(completions[1])
 
@@ -75,13 +90,13 @@ test('provides custom link completions', async () => {
 
   completions = await getCompletionItems()
 
-  assertLinkCompletionItems(completions, ExpectedRootLinkCompletionItems)
+  assertLinkCompletionItems(completions, addBaseToExpectedLinkCompletionItems(ExpectedRootLinkCompletionItems))
 
   await applyCompletionItem(completions[0])
 
   const text = getLineText(position[0])
 
-  assert.equal(text, '<CustomLink url="/achivi-amans/" />')
+  assert.equal(text, '<CustomLink url="/docs/achivi-amans/" />')
 
   await updateConfig(customComponentsSection, undefined)
 })

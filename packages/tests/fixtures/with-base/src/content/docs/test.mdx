@@ -1,0 +1,31 @@
+---
+title: Test
+prev:
+  link: /
+  label: frontmatter-prev-link
+next:
+  link: /
+  label: frontmatter-next-link
+hero:
+  actions:
+    - text: frontmatter-action-link
+      link: /
+---
+
+[markdown-link](/)
+
+[markdown-reference-link][definition]
+
+[definition]: /
+
+<a href="/">html-link</a>
+
+import { CardGrid, LinkCard, LinkButton } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<LinkCard title="linkcard-link" href="/" />
+</CardGrid>
+
+<LinkButton href="/">linkbutton-link</LinkButton>
+
+<CustomLink url="/" />
