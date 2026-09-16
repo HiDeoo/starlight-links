@@ -4,6 +4,7 @@ export default hideoo([
   {
     languageOptions: {
       parserOptions: {
+        project: false,
         projectService: {
           allowDefaultProject: ['*.mjs'],
         },

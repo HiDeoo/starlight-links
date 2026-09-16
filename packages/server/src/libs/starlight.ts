@@ -21,7 +21,6 @@ export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promis
 
   const fallbackCandidateSlugs: string[] = []
 
-  // eslint-disable-next-line unicorn/no-array-method-this-argument
   const data = await runWithConcurrency.map(files, async (file) => {
     const linkData = await getLinkData(lspOptions, path.join(fsPaths.content, file))
 
@@ -42,7 +41,7 @@ export async function getLinksData(lspOptions: StarlightLinksLspOptions): Promis
     for (const locale of Object.keys(config.locales)) {
       for (const slug of fallbackCandidateSlugs) {
         const localizedSlug = config.defaultLocale
-          ? slug.replace(`/${config.defaultLocale}/`, `/${locale}/`)
+          ? slug.replace(`/${config.defaultLocale}/`, () => `/${locale}/`)
           : `/${locale}${slug}`
 
         const localizedLinkData = linksData.get(localizedSlug)

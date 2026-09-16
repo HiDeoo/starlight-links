@@ -84,33 +84,33 @@ export function assertLinkCompletionItems(
   items: CompletionItem[] | undefined,
   expectedItems: ExpectedLinkCompletionItem[],
 ) {
-  assert(items, 'No completion items found.')
+  assert.ok(items, 'No completion items found.')
 
   for (const [index, expected] of expectedItems.entries()) {
     const item = items[index]
-    assert(item, `No completion item found at index ${index}.`)
+    assert.ok(item, `No completion item found at index ${index}.`)
 
     if (expected.description) {
-      assert(typeof item.label !== 'string', `Completion item label does not have description at index ${index}.`)
+      assert.ok(typeof item.label !== 'string', `Completion item label does not have description at index ${index}.`)
 
       const label: string = item.label.label
       assert.strictEqual(label, expected.link, `Completion item label is not '${expected.link}' at index ${index}.`)
 
-      assert(item.label.description, `No completion item description found at index ${index}.`)
+      assert.ok(item.label.description, `No completion item description found at index ${index}.`)
       const description: string = item.label.description
       assert.strictEqual(description, expected.description, `Completion item description mismatch at index ${index}.`)
     } else {
-      assert(typeof item.label === 'string', `Completion item label has unexpected description at index ${index}.`)
+      assert.ok(typeof item.label === 'string', `Completion item label has unexpected description at index ${index}.`)
 
       const label: string = item.label
       assert.strictEqual(label, expected.link, `Completion item label is not '${expected.link}' at index ${index}.`)
     }
 
-    assert(item.kind === CompletionItemKind.File, `Completion item kind is not 'File' at index ${index}.`)
+    assert.ok(item.kind === CompletionItemKind.File, `Completion item kind is not 'File' at index ${index}.`)
 
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     const textEdit = item.textEdit
-    assert(textEdit, `No text edit found in the completion item at index ${index}.`)
+    assert.ok(textEdit, `No text edit found in the completion item at index ${index}.`)
 
     const newText: string = textEdit.newText
     assert.strictEqual(
@@ -122,10 +122,10 @@ export function assertLinkCompletionItems(
 
   for (let i = expectedItems.length; i < items.length; i++) {
     const item = items[i]
-    assert(item, `No completion item found at index ${i}.`)
+    assert.ok(item, `No completion item found at index ${i}.`)
 
     // eslint-disable-next-line @typescript-eslint/no-deprecated
-    assert(item.textEdit === undefined, `Unexpected text edit found in the completion item at index ${i}.`)
+    assert.ok(item.textEdit === undefined, `Unexpected text edit found in the completion item at index ${i}.`)
   }
 }
 

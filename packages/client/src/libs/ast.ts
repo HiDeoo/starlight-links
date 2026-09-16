@@ -34,6 +34,7 @@ export function getStarlightProjectFromConfig(code: string, fileReader: FileRead
   } catch (error) {
     throw new Error(
       `Failed to parse Astro configuration file: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     )
   }
 
@@ -188,7 +189,6 @@ async function getStarlightLocales(program: Program, starlightConfig: ObjectExpr
 
       if (localePropertyName === 'label' && isStringLiteral(localeProperty.value)) {
         localeLabel = localeProperty.value.value
-        continue
       }
     }
 
@@ -226,11 +226,11 @@ async function getObjectExpressionFromIdentifier(
 
   for (const bodyNode of program.body) {
     if (isImportDeclaration(bodyNode)) {
-      const identifierImportSpecifier = bodyNode.specifiers.find(
+      const hasDefaultImport = bodyNode.specifiers.some(
         (specifier) => isIdentifier(specifier.local) && specifier.local.name === identifier.name,
       )
 
-      if (identifierImportSpecifier) {
+      if (hasDefaultImport) {
         return getObjectExpressionFromImportSpecifier(identifier, bodyNode, fileReader)
       }
     }

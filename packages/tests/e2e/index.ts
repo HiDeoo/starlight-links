@@ -63,4 +63,4 @@ function logErrorAndExit(error: unknown): void {
   process.exit(1)
 }
 
-run().catch(logErrorAndExit)
+void run().catch(logErrorAndExit)

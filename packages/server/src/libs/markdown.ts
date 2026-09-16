@@ -123,7 +123,7 @@ function makeStarlightLink(url: string, points: Points): StarlightLink {
   return {
     url,
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    slug: url.includes('#') ? url.split('#')[0]! : url,
+    slug: url.includes('#') ? url.split('#', 1)[0]! : url,
     start: getPositionFromPoint(points.start),
     end: getPositionFromPoint(points.end),
   }
@@ -175,8 +175,9 @@ function getHtmlAttributeValuePosition(html: string, node: Node): Points | undef
   const match = htmlAttributeValueRegex.exec(attributeStr)
   const prefix = match?.groups?.['prefix']
   const value = match?.groups?.['quotedValue'] ?? match?.groups?.['unquotedValue']
-  const isQuoted = match?.groups?.['quotedValue'] !== undefined
   if (!prefix || value === undefined) return
+
+  const isQuoted = match.groups?.['quotedValue'] !== undefined
 
   const urlStart = { line: start.line, column: start.column + prefix.length + (isQuoted ? 1 : 0) }
   const urlEnd = { line: start.line, column: urlStart.column + value.length }
