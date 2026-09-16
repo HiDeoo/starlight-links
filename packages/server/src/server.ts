@@ -82,7 +82,7 @@ async function onConnectionInitialized() {
   extConfig = await getConfig(connection)
   linkComponentMap = getLinkComponentMap(extConfig)
 
-  getLinksData(lspOptions)
+  void getLinksData(lspOptions)
     .then((result) => {
       linksData = result
       connection.console.info('Links data loaded successfully.')
@@ -174,7 +174,7 @@ async function onConnectionDefinition(definition: DefinitionParams) {
 
   const position = { line: 0, character: 0 }
 
-  const fragment = starlightLink.url.split('#')[1]
+  const fragment = starlightLink.url.split('#', 2)[1]
 
   if (fragment) {
     const fragments = await getContentFragments(linkData.fsPath)
@@ -279,7 +279,7 @@ function makeCompletionItem(
 function makeDocumentLinkData(link: StarlightLink) {
   return {
     slug: link.slug,
-    fragment: link.url.includes('#') ? link.url.split('#')[1] : undefined,
+    fragment: link.url.includes('#') ? link.url.split('#', 2)[1] : undefined,
   }
 }
 
